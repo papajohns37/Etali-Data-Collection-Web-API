@@ -1,0 +1,30 @@
+C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collection-Web-API\Etali Data Collection Web API\obj\Debug\net8.0\rpswa.dswa.cache.json
+C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collection-Web-API\Etali Data Collection Web API\obj\Debug\net8.0\Etali Data Collection Web API.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collection-Web-API\Etali Data Collection Web API\obj\Debug\net8.0\Etali Data Collection Web API.AssemblyInfoInputs.cache
+C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collection-Web-API\Etali Data Collection Web API\obj\Debug\net8.0\Etali Data Collection Web API.AssemblyInfo.cs
+C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collection-Web-API\Etali Data Collection Web API\obj\Debug\net8.0\Etali Data Collection Web API.csproj.CoreCompileInputs.cache
+C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collection-Web-API\Etali Data Collection Web API\obj\Debug\net8.0\Etali Data Collection Web API.MvcApplicationPartsAssemblyInfo.cache
+C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collection-Web-API\Etali Data Collection Web API\obj\Debug\net8.0\Etali Data Collection Web API.sourcelink.json
+C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collection-Web-API\Etali Data Collection Web API\bin\Debug\net8.0\appsettings.Development.json
+C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collection-Web-API\Etali Data Collection Web API\bin\Debug\net8.0\appsettings.json
+C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collection-Web-API\Etali Data Collection Web API\bin\Debug\net8.0\Etali Data Collection Web API.staticwebassets.endpoints.json
+C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collection-Web-API\Etali Data Collection Web API\bin\Debug\net8.0\Etali Data Collection Web API.exe
+C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collection-Web-API\Etali Data Collection Web API\bin\Debug\net8.0\Etali Data Collection Web API.deps.json
+C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collection-Web-API\Etali Data Collection Web API\bin\Debug\net8.0\Etali Data Collection Web API.runtimeconfig.json
+C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collection-Web-API\Etali Data Collection Web API\bin\Debug\net8.0\Etali Data Collection Web API.dll
+C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collection-Web-API\Etali Data Collection Web API\bin\Debug\net8.0\Etali Data Collection Web API.pdb
+C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collection-Web-API\Etali Data Collection Web API\obj\Debug\net8.0\rjimswa.dswa.cache.json
+C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collection-Web-API\Etali Data Collection Web API\obj\Debug\net8.0\rjsmrazor.dswa.cache.json
+C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collection-Web-API\Etali Data Collection Web API\obj\Debug\net8.0\rjsmcshtml.dswa.cache.json
+C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collection-Web-API\Etali Data Collection Web API\obj\Debug\net8.0\scopedcss\bundle\Etali Data Collection Web API.styles.css
+C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collection-Web-API\Etali Data Collection Web API\obj\Debug\net8.0\staticwebassets.build.json
+C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collection-Web-API\Etali Data Collection Web API\obj\Debug\net8.0\staticwebassets.build.json.cache
+C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collection-Web-API\Etali Data Collection Web API\obj\Debug\net8.0\staticwebassets.development.json
+C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collection-Web-API\Etali Data Collection Web API\obj\Debug\net8.0\staticwebassets.build.endpoints.json
+C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collection-Web-API\Etali Data Collection Web API\obj\Debug\net8.0\swae.build.ex.cache
+C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collection-Web-API\Etali Data Collection Web API\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt
+C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collection-Web-API\Etali Data Collection Web API\obj\Debug\net8.0\Etali Data Collection Web API.dll
+C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collection-Web-API\Etali Data Collection Web API\obj\Debug\net8.0\refint\Etali Data Collection Web API.dll
+C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collection-Web-API\Etali Data Collection Web API\obj\Debug\net8.0\Etali Data Collection Web API.pdb
+C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collection-Web-API\Etali Data Collection Web API\obj\Debug\net8.0\Etali Data Collection Web API.genruntimeconfig.cache
+C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collection-Web-API\Etali Data Collection Web API\obj\Debug\net8.0\ref\Etali Data Collection Web API.dll
