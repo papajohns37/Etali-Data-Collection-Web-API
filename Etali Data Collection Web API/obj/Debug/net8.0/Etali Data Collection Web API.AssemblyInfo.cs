@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Etali Data Collection Web API")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+bde3ae2f4f40ef7e58763c7f816f4c9ba30de5a0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e5c41eed562c037a814409c93b0b6c41bca1f58e")]
 [assembly: System.Reflection.AssemblyProductAttribute("Etali Data Collection Web API")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Etali Data Collection Web API")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
