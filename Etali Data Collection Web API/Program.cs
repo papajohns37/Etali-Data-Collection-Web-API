@@ -6,6 +6,9 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure URLs explicitly
+builder.WebHost.UseUrls("https://localhost:7194", "http://localhost:5135");
+
 // Add CORS services
 builder.Services.AddCors(options =>
 {
