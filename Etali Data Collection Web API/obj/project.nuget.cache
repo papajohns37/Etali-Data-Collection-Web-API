@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "Yy/B8uNHKN4=",
+  "dgSpecHash": "596Vdr/0CDE=",
   "success": true,
   "projectFilePath": "C:\\Users\\john.reynolds\\Documents\\PersonalProjects\\Etali API\\Etali-Data-Collection-Web-API\\Etali Data Collection Web API\\Etali Data Collection Web API.csproj",
   "expectedPackageFiles": [
@@ -15,7 +15,8 @@
     "C:\\Users\\john.reynolds\\.nuget\\packages\\microsoft.extensions.logging\\8.0.0\\microsoft.extensions.logging.8.0.0.nupkg.sha512",
     "C:\\Users\\john.reynolds\\.nuget\\packages\\microsoft.extensions.logging.abstractions\\8.0.0\\microsoft.extensions.logging.abstractions.8.0.0.nupkg.sha512",
     "C:\\Users\\john.reynolds\\.nuget\\packages\\microsoft.extensions.options\\8.0.0\\microsoft.extensions.options.8.0.0.nupkg.sha512",
-    "C:\\Users\\john.reynolds\\.nuget\\packages\\microsoft.extensions.primitives\\8.0.0\\microsoft.extensions.primitives.8.0.0.nupkg.sha512"
+    "C:\\Users\\john.reynolds\\.nuget\\packages\\microsoft.extensions.primitives\\8.0.0\\microsoft.extensions.primitives.8.0.0.nupkg.sha512",
+    "C:\\Users\\john.reynolds\\.nuget\\packages\\puppeteersharp\\20.2.5\\puppeteersharp.20.2.5.nupkg.sha512"
   ],
   "logs": []
 }

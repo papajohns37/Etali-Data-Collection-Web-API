@@ -53,6 +53,10 @@
             "Microsoft.EntityFrameworkCore.InMemory": {
               "target": "Package",
               "version": "[8.0.0, )"
+            },
+            "PuppeteerSharp": {
+              "target": "Package",
+              "version": "[20.2.5, )"
             }
           },
           "imports": [

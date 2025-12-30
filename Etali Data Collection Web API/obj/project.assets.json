@@ -214,6 +214,22 @@
         "build": {
           "buildTransitive/net6.0/_._": {}
         }
+      },
+      "PuppeteerSharp/20.2.5": {
+        "type": "package",
+        "dependencies": {
+          "Microsoft.Extensions.Logging": "8.0.0"
+        },
+        "compile": {
+          "lib/net8.0/PuppeteerSharp.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net8.0/PuppeteerSharp.dll": {
+            "related": ".xml"
+          }
+        }
       }
     }
   },
@@ -580,11 +596,27 @@
         "microsoft.extensions.primitives.nuspec",
         "useSharedDesignerContext.txt"
       ]
+    },
+    "PuppeteerSharp/20.2.5": {
+      "sha512": "w9/oEME3spddIKjh8C3sMxQziJe6lcdsTtQCnG3GevupZYQPx243dz1znh9YIE9otulXa9lg+Pnf/SMUCq4/Gw==",
+      "type": "package",
+      "path": "puppeteersharp/20.2.5",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "lib/net8.0/PuppeteerSharp.dll",
+        "lib/net8.0/PuppeteerSharp.xml",
+        "lib/netstandard2.0/PuppeteerSharp.dll",
+        "lib/netstandard2.0/PuppeteerSharp.xml",
+        "puppeteersharp.20.2.5.nupkg.sha512",
+        "puppeteersharp.nuspec"
+      ]
     }
   },
   "projectFileDependencyGroups": {
     "net8.0": [
-      "Microsoft.EntityFrameworkCore.InMemory >= 8.0.0"
+      "Microsoft.EntityFrameworkCore.InMemory >= 8.0.0",
+      "PuppeteerSharp >= 20.2.5"
     ]
   },
   "packageFolders": {
@@ -640,6 +672,10 @@
           "Microsoft.EntityFrameworkCore.InMemory": {
             "target": "Package",
             "version": "[8.0.0, )"
+          },
+          "PuppeteerSharp": {
+            "target": "Package",
+            "version": "[20.2.5, )"
           }
         },
         "imports": [

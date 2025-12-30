@@ -74,9 +74,9 @@ app.MapPost("/hand/evaluate", (EvaluatedHand evaluation, IHandEvaluationService 
 /// <summary>
 /// Adds a new decklist to the configuration.
 /// </summary>
-app.MapPost("/decklist", (string link, string name, IDecklistAddingService decklistAddingService, IHttpClientFactory httpClientFactory, ILogger<DecklistAddingService> logger) =>
+app.MapPost("/decklist", async (string link, string name, IDecklistAddingService decklistAddingService) =>
 {
-    decklistAddingService.AddDecklist(link, name);
+    await decklistAddingService.AddDecklist(link, name);
     return Results.Ok(new { message = "Decklist added successfully" });
 })
 .WithName("AddDecklist");

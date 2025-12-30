@@ -33,3 +33,4 @@ C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collectio
 C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collection-Web-API\Etali Data Collection Web API\bin\Debug\net8.0\Microsoft.EntityFrameworkCore.Abstractions.dll
 C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collection-Web-API\Etali Data Collection Web API\bin\Debug\net8.0\Microsoft.EntityFrameworkCore.InMemory.dll
 C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collection-Web-API\Etali Data Collection Web API\obj\Debug\net8.0\Etali Da.4A94241E.Up2Date
+C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collection-Web-API\Etali Data Collection Web API\bin\Debug\net8.0\PuppeteerSharp.dll
