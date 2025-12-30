@@ -1,0 +1,13 @@
+# Visual Studio
+.vs/
+bin/
+obj/
+Debug/
+Release/
+node_modules/
+
+# User-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
