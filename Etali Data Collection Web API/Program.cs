@@ -51,12 +51,19 @@ app.UseCors();
 // API Endpoints
 
 /// <summary>
-/// Generates a new random hand of cards.
+/// Generates a new random hand of cards from a specific decklist.
 /// </summary>
-app.MapGet("/hand", (IHandGenerationService handGenerationService, IHandEvaluationService handEvaluationService) =>
+app.MapGet("/hand", (string decklistName, IHandGenerationService handGenerationService, IHandEvaluationService handEvaluationService) =>
 {
-    var handId = handEvaluationService.GetNextHandId();
-    return handGenerationService.GenerateHand(handId);
+    try
+    {
+        var handId = handEvaluationService.GetNextHandId();
+        return Results.Ok(handGenerationService.GenerateHand(handId, decklistName));
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.NotFound(new { error = ex.Message });
+    }
 })
 .WithName("GenerateHand");
 
@@ -80,6 +87,15 @@ app.MapPost("/decklist", async (string link, string name, IDecklistAddingService
     return Results.Ok(new { message = "Decklist added successfully" });
 })
 .WithName("AddDecklist");
+
+/// <summary>
+/// Retrieves all decklists.
+/// </summary>
+app.MapGet("/decklists", async (EtaliDatabase database) =>
+{
+    return await database.Decklists.ToListAsync();
+})
+.WithName("GetDecklists");
 
 /// <summary>
 /// Retrieves all evaluated hands.
