@@ -1,6 +1,8 @@
+using Etali_Data_Collection_Web_API;
 using Etali_Data_Collection_Web_API.Configuration;
 using Etali_Data_Collection_Web_API.Models;
 using Etali_Data_Collection_Web_API.Services;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,8 +19,11 @@ builder.Services.AddCors(options =>
 
 // Register application services
 builder.Services.AddSingleton<GameConfiguration>();
-builder.Services.AddSingleton<IHandEvaluationService, HandEvaluationService>();
+builder.Services.AddScoped<IHandEvaluationService, HandEvaluationService>();
 builder.Services.AddScoped<IHandGenerationService, HandGenerationService>();
+
+//Add db context
+builder.Services.AddDbContext<EtaliDatabase>(options => options.UseInMemoryDatabase("EtaliDatabase"));
 
 var app = builder.Build();
 

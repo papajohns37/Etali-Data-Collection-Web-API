@@ -17,7 +17,7 @@ public interface IHandEvaluationService
     /// Retrieves all recorded hand evaluations.
     /// </summary>
     /// <returns>A read-only collection of all evaluated hands.</returns>
-    IReadOnlyList<EvaluatedHand> GetAllEvaluations();
+    Task<IReadOnlyList<EvaluatedHand>> GetAllEvaluations();
 
     /// <summary>
     /// Gets the next available hand ID.

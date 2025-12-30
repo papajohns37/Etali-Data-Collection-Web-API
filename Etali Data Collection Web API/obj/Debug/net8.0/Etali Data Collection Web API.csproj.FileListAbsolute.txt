@@ -28,3 +28,8 @@ C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collectio
 C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collection-Web-API\Etali Data Collection Web API\obj\Debug\net8.0\Etali Data Collection Web API.pdb
 C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collection-Web-API\Etali Data Collection Web API\obj\Debug\net8.0\Etali Data Collection Web API.genruntimeconfig.cache
 C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collection-Web-API\Etali Data Collection Web API\obj\Debug\net8.0\ref\Etali Data Collection Web API.dll
+C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collection-Web-API\Etali Data Collection Web API\obj\Debug\net8.0\Etali Data Collection Web API.csproj.AssemblyReference.cache
+C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collection-Web-API\Etali Data Collection Web API\bin\Debug\net8.0\Microsoft.EntityFrameworkCore.dll
+C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collection-Web-API\Etali Data Collection Web API\bin\Debug\net8.0\Microsoft.EntityFrameworkCore.Abstractions.dll
+C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collection-Web-API\Etali Data Collection Web API\bin\Debug\net8.0\Microsoft.EntityFrameworkCore.InMemory.dll
+C:\Users\john.reynolds\Documents\PersonalProjects\Etali API\Etali-Data-Collection-Web-API\Etali Data Collection Web API\obj\Debug\net8.0\Etali Da.4A94241E.Up2Date

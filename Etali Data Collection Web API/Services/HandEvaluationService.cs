@@ -1,4 +1,6 @@
 using Etali_Data_Collection_Web_API.Models;
+using Microsoft.EntityFrameworkCore;
+using System.Threading.Tasks;
 
 namespace Etali_Data_Collection_Web_API.Services;
 
@@ -12,33 +14,32 @@ namespace Etali_Data_Collection_Web_API.Services;
 /// </remarks>
 public class HandEvaluationService : IHandEvaluationService
 {
-    private readonly List<EvaluatedHand> _evaluatedHands;
-    private int _currentHandId;
+    private readonly EtaliDatabase _database;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="HandEvaluationService"/> class.
     /// </summary>
-    public HandEvaluationService()
+    public HandEvaluationService(EtaliDatabase etaliDatabase)
     {
-        _evaluatedHands = new List<EvaluatedHand>();
-        _currentHandId = 0;
+        _database = etaliDatabase;
     }
 
     /// <inheritdoc/>
     public void RecordEvaluation(EvaluatedHand evaluation)
     {
-        _evaluatedHands.Add(evaluation);
+        _database.EvaluatedHands.Add(evaluation);
+        _database.SaveChanges();
     }
 
     /// <inheritdoc/>
-    public IReadOnlyList<EvaluatedHand> GetAllEvaluations()
+    public async Task<IReadOnlyList<EvaluatedHand>> GetAllEvaluations()
     {
-        return _evaluatedHands.AsReadOnly();
+        return await _database.EvaluatedHands.ToListAsync();
     }
 
     /// <inheritdoc/>
     public int GetNextHandId()
     {
-        return ++_currentHandId;
+        return _database.EvaluatedHands.Any() ? _database.EvaluatedHands.Max(h => h.Id) + 1 : 1;
     }
 }
