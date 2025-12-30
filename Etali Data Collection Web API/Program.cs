@@ -21,9 +21,27 @@ builder.Services.AddCors(options =>
 builder.Services.AddSingleton<GameConfiguration>();
 builder.Services.AddScoped<IHandEvaluationService, HandEvaluationService>();
 builder.Services.AddScoped<IHandGenerationService, HandGenerationService>();
+builder.Services.AddScoped<IDecklistAddingService, DecklistAddingService>();
+
+builder.Services.AddHttpClient("MoxfieldClient", client =>
+{
+    client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+    client.DefaultRequestHeaders.Add("Accept", "application/json, text/plain, */*");
+    client.DefaultRequestHeaders.Add("Accept-Language", "en-US,en;q=0.9");
+    client.DefaultRequestHeaders.Add("Accept-Encoding", "gzip, deflate, br");
+}).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+{
+    AutomaticDecompression = System.Net.DecompressionMethods.All,
+    UseCookies = false
+});
 
 //Add db context
 builder.Services.AddDbContext<EtaliDatabase>(options => options.UseInMemoryDatabase("EtaliDatabase"));
+
+// Optional: configure logging
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
 
 var app = builder.Build();
 
@@ -52,6 +70,16 @@ app.MapPost("/hand/evaluate", (EvaluatedHand evaluation, IHandEvaluationService 
     return Results.Ok(new { message = "Hand evaluation recorded", handId = evaluation.Id });
 })
 .WithName("EvaluateHand");
+
+/// <summary>
+/// Adds a new decklist to the configuration.
+/// </summary>
+app.MapPost("/decklist", (string link, string name, IDecklistAddingService decklistAddingService, IHttpClientFactory httpClientFactory, ILogger<DecklistAddingService> logger) =>
+{
+    decklistAddingService.AddDecklist(link, name);
+    return Results.Ok(new { message = "Decklist added successfully" });
+})
+.WithName("AddDecklist");
 
 /// <summary>
 /// Retrieves all evaluated hands.
