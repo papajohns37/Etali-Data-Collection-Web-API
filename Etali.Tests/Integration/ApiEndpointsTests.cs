@@ -672,6 +672,37 @@ public class ApiEndpointsTests : IClassFixture<CustomWebApplicationFactory>
     }
 
     #endregion
+
+    #region Swagger Documentation Tests
+
+    [Fact]
+    public async Task Swagger_Documentation_IsAccessible()
+    {
+        // Act
+        var response = await _client.GetAsync("/swagger/v1/swagger.json");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var content = await response.Content.ReadAsStringAsync();
+        Assert.Contains("Etali Data Collection API", content);
+        Assert.Contains("/hand", content);
+        Assert.Contains("/hand/evaluate", content);
+        Assert.Contains("/decklists", content);
+    }
+
+    [Fact]
+    public async Task SwaggerUI_IsAccessible()
+    {
+        // Act
+        var response = await _client.GetAsync("/");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var content = await response.Content.ReadAsStringAsync();
+        Assert.Contains("swagger", content, StringComparison.OrdinalIgnoreCase);
+    }
+
+    #endregion
 }
 
 /// <summary>

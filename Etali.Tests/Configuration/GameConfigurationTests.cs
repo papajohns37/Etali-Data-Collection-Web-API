@@ -13,41 +13,6 @@ public class GameConfigurationTests
     }
 
     [Fact]
-    public void Decklist_HasCorrectNumberOfCards()
-    {
-        // Assert
-        Assert.Equal(99, _configuration.Decklist.Length);
-    }
-
-    [Fact]
-    public void Decklist_ContainsExpectedCards()
-    {
-        // Assert - Check a few known cards
-        Assert.Contains("Ancient Tomb", _configuration.Decklist);
-        Assert.Contains("Sol Ring", _configuration.Decklist);
-        Assert.Contains("Mox Diamond", _configuration.Decklist);
-        Assert.Contains("Food Chain", _configuration.Decklist);
-    }
-
-    [Fact]
-    public void Decklist_HasNoDuplicates()
-    {
-        // Assert
-        var distinctCards = _configuration.Decklist.Distinct().ToArray();
-        Assert.Equal(_configuration.Decklist.Length, distinctCards.Length);
-    }
-
-    [Fact]
-    public void Decklist_NoNullOrEmptyCards()
-    {
-        // Assert
-        Assert.All(_configuration.Decklist, card =>
-        {
-            Assert.False(string.IsNullOrWhiteSpace(card));
-        });
-    }
-
-    [Fact]
     public void AvailableStickers_HasCorrectCount()
     {
         // Assert
