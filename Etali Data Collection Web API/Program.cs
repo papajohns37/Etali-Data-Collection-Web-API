@@ -110,3 +110,6 @@ app.MapGet("/hands/evaluated", (IHandEvaluationService handEvaluationService) =>
 .WithName("GetEvaluatedHands");
 
 app.Run();
+
+// Make Program class accessible for testing
+public partial class Program { }
