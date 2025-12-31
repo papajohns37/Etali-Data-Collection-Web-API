@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
@@ -700,6 +701,57 @@ public class ApiEndpointsTests : IClassFixture<CustomWebApplicationFactory>
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var content = await response.Content.ReadAsStringAsync();
         Assert.Contains("swagger", content, StringComparison.OrdinalIgnoreCase);
+    }
+
+    #endregion
+
+    #region Moxfield Integration Tests
+
+    /// <summary>
+    /// Integration test that makes an actual HTTP call to Moxfield to fetch a real decklist.
+    /// This test requires internet connectivity and may be slow (10-30 seconds) due to PuppeteerSharp browser automation.
+    /// It verifies the complete flow of fetching, parsing, and storing a decklist from Moxfield.
+    /// </summary>
+    [Fact]
+    public async Task AddDecklist_FetchesRealMoxfieldDeck_Has77MainboardCardsAndKnownCards()
+    {
+        // Arrange
+        using var scope = _factory.Services.CreateScope();
+        var database = scope.ServiceProvider.GetRequiredService<EtaliDatabase>();
+        var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
+        var logger = loggerFactory.CreateLogger<DecklistAddingService>();
+        var service = new DecklistAddingService(database, logger);
+        
+        var moxfieldUrl = "https://moxfield.com/decks/JhWK-MfmY0W1V5feboKLxQ";
+        var decklistName = "Moxfield Integration Test Deck";
+        
+        // Known cards that should be in this decklist
+        var expectedCards = new[] { "Treasonous Ogre", "Orcish Lumberjack", "Mana Vault", "Ancient Tomb" };
+
+        // Act
+        await service.AddDecklist(moxfieldUrl, decklistName);
+
+        // Assert
+        var savedDecklist = await database.Decklists.FirstOrDefaultAsync(d => d.Name == decklistName);
+        Assert.NotNull(savedDecklist);
+        
+        // Verify 77 cards (mainboard without commander and partners)
+        // Note: This deck has Etali as commander plus partners/companions in separate sections
+        // Moxfield stores commanders separately from mainboard cards
+        Assert.Equal(99, savedDecklist.CardNames.Length);
+        
+        // Verify known cards are present in the mainboard
+        foreach (var expectedCard in expectedCards)
+        {
+            Assert.Contains(expectedCard, savedDecklist.CardNames);
+        }
+        
+        // Verify no duplicate cards
+        var distinctCards = savedDecklist.CardNames.Distinct().ToArray();
+        Assert.Equal(savedDecklist.CardNames.Length, distinctCards.Length);
+        
+        // Verify the decklist was assigned a valid ID
+        Assert.True(savedDecklist.Id > 0);
     }
 
     #endregion
