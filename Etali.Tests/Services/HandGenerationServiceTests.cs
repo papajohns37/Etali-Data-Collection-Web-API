@@ -22,7 +22,7 @@ public class HandGenerationServiceTests
             .Options;
         _database = new EtaliDatabase(options);
         
-        // Seed test decklist
+        // Seed test decklists
         _database.Decklists.Add(new Decklist
         {
             Id = 1,
@@ -33,6 +33,18 @@ public class HandGenerationServiceTests
                 "Card6", "Card7", "Card8", "Card9", "Card10"
             }
         });
+        
+        _database.Decklists.Add(new Decklist
+        {
+            Id = 2,
+            Name = "SecondDeck",
+            CardNames = new[]
+            {
+                "CardA", "CardB", "CardC", "CardD", "CardE",
+                "CardF", "CardG", "CardH", "CardI", "CardJ"
+            }
+        });
+        
         _database.SaveChanges();
         
         _service = new HandGenerationService(_configuration, _database);
@@ -132,7 +144,7 @@ public class HandGenerationServiceTests
         // Arrange
         _database.Decklists.Add(new Decklist
         {
-            Id = 2,
+            Id = 3,
             Name = "SmallDeck",
             CardNames = new[] { "Card1", "Card2", "Card3" }
         });
@@ -161,5 +173,145 @@ public class HandGenerationServiceTests
             hand2.SeatOrder != hand3.SeatOrder;
         
         Assert.True(handsAreDifferent, "Multiple hands should produce varied results");
+    }
+
+    [Fact]
+    public void GenerateHand_Stickers_SelectedFromPool()
+    {
+        // The sticker pool is [6, 5, 5, 4, 4, 4, 4, 4, 4, 3]
+        // When selecting 3, we can get duplicates (e.g., picking two 4s)
+        
+        // Act - Generate multiple hands
+        for (int i = 0; i < 20; i++)
+        {
+            var hand = _service.GenerateHand(i + 100, "TestDeck");
+            
+            // Assert - Should have exactly 3 stickers
+            Assert.Equal(3, hand.Stickers.Length);
+            
+            // All stickers should be from the available pool
+            Assert.All(hand.Stickers, sticker => 
+                Assert.Contains(sticker, _configuration.AvailableStickers));
+        }
+    }
+
+    [Fact]
+    public void GenerateHand_AllCardsAreFromSpecifiedDecklist()
+    {
+        // Arrange
+        var expectedCards = _database.Decklists.First(d => d.Name == "TestDeck").CardNames;
+
+        // Act
+        var hand = _service.GenerateHand(1, "TestDeck");
+
+        // Assert - All cards in hand should be from the specified decklist
+        Assert.All(hand.Cards, card => Assert.Contains(card, expectedCards));
+    }
+
+    [Fact]
+    public void GenerateHand_DifferentDecklists_ReturnCorrectMetadata()
+    {
+        // Act
+        var hand1 = _service.GenerateHand(1, "TestDeck");
+        var hand2 = _service.GenerateHand(2, "SecondDeck");
+
+        // Assert
+        Assert.Equal(1, hand1.DecklistId);
+        Assert.Equal("TestDeck", hand1.DecklistName);
+        Assert.All(hand1.Cards, card => Assert.StartsWith("Card", card));
+
+        Assert.Equal(2, hand2.DecklistId);
+        Assert.Equal("SecondDeck", hand2.DecklistName);
+        Assert.All(hand2.Cards, card => Assert.StartsWith("Card", card));
+    }
+
+    [Fact]
+    public void GenerateHand_NeverSelectsCardsFromDifferentDecklist()
+    {
+        // Arrange
+        var testDeckCards = _database.Decklists.First(d => d.Name == "TestDeck").CardNames;
+        var secondDeckCards = _database.Decklists.First(d => d.Name == "SecondDeck").CardNames;
+
+        // Act
+        var hand = _service.GenerateHand(1, "TestDeck");
+
+        // Assert - Should only have cards from TestDeck, none from SecondDeck
+        Assert.All(hand.Cards, card => Assert.Contains(card, testDeckCards));
+        Assert.All(hand.Cards, card => Assert.DoesNotContain(card, secondDeckCards));
+    }
+
+    [Fact]
+    public void GenerateHand_WithMinimalDecklist_Returns7Cards()
+    {
+        // Arrange - Decklist with exactly 7 cards
+        _database.Decklists.Add(new Decklist
+        {
+            Id = 4,
+            Name = "MinimalDeck",
+            CardNames = new[] { "C1", "C2", "C3", "C4", "C5", "C6", "C7" }
+        });
+        _database.SaveChanges();
+
+        // Act
+        var hand = _service.GenerateHand(1, "MinimalDeck");
+
+        // Assert
+        Assert.Equal(7, hand.Cards.Length);
+        Assert.Equal(7, hand.Cards.Distinct().Count()); // All unique
+    }
+
+    [Fact]
+    public void GenerateHand_StickerValues_AreAllFromAvailablePool()
+    {
+        // Arrange
+        var availableValues = _configuration.AvailableStickers.Distinct().ToList();
+
+        // Act - Generate multiple hands
+        for (int i = 0; i < 20; i++)
+        {
+            var hand = _service.GenerateHand(i + 200, "TestDeck");
+
+            // Assert - Every sticker value must be in the available pool
+            Assert.All(hand.Stickers, sticker => Assert.Contains(sticker, availableValues));
+        }
+    }
+
+    [Fact]
+    public void GenerateHand_MultipleHands_ProducesVariedSeatOrders()
+    {
+        // Act - Generate multiple hands
+        var seatOrders = new List<int>();
+        for (int i = 0; i < 20; i++)
+        {
+            var hand = _service.GenerateHand(i + 300, "TestDeck");
+            seatOrders.Add(hand.SeatOrder);
+        }
+
+        // Assert - Should have some variety in seat orders (not all the same)
+        var distinctOrders = seatOrders.Distinct().Count();
+        Assert.True(distinctOrders > 1, "Seat orders should vary across multiple hands");
+        Assert.All(seatOrders, order => Assert.InRange(order, 1, 4));
+    }
+
+    [Fact]
+    public void GenerateHand_WithLargeDeck_StillReturns7UniqueCards()
+    {
+        // Arrange - Large 99-card deck
+        var largeCardList = Enumerable.Range(1, 99).Select(i => $"Card{i}").ToArray();
+        _database.Decklists.Add(new Decklist
+        {
+            Id = 5,
+            Name = "LargeDeck",
+            CardNames = largeCardList
+        });
+        _database.SaveChanges();
+
+        // Act
+        var hand = _service.GenerateHand(1, "LargeDeck");
+
+        // Assert
+        Assert.Equal(7, hand.Cards.Length);
+        Assert.Equal(7, hand.Cards.Distinct().Count());
+        Assert.All(hand.Cards, card => Assert.Contains(card, largeCardList));
     }
 }
