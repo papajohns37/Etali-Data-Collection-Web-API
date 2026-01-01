@@ -735,9 +735,7 @@ public class ApiEndpointsTests : IClassFixture<CustomWebApplicationFactory>
         var savedDecklist = await database.Decklists.FirstOrDefaultAsync(d => d.Name == decklistName);
         Assert.NotNull(savedDecklist);
         
-        // Verify 77 cards (mainboard without commander and partners)
-        // Note: This deck has Etali as commander plus partners/companions in separate sections
-        // Moxfield stores commanders separately from mainboard cards
+        // Verify 99 cards 
         Assert.Equal(99, savedDecklist.CardNames.Length);
         
         // Verify known cards are present in the mainboard
