@@ -1,5 +1,6 @@
 using Etali_Data_Collection_Web_API.Models;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace Etali_Data_Collection_Web_API
 {
@@ -20,12 +21,12 @@ namespace Etali_Data_Collection_Web_API
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Cards)
                     .HasConversion(
-                        v => string.Join(',', v),
-                        v => v.Split(',', StringSplitOptions.None));
+                        v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                        v => JsonSerializer.Deserialize<string[]>(v, (JsonSerializerOptions?)null) ?? Array.Empty<string>());
                 entity.Property(e => e.Stickers)
                     .HasConversion(
-                        v => string.Join(',', v),
-                        v => v.Split(',', StringSplitOptions.None).Select(int.Parse).ToArray());
+                        v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                        v => JsonSerializer.Deserialize<int[]>(v, (JsonSerializerOptions?)null) ?? Array.Empty<int>());
             });
 
             // Configure Decklist
@@ -34,8 +35,8 @@ namespace Etali_Data_Collection_Web_API
                 entity.HasKey(d => d.Id);
                 entity.Property(d => d.CardNames)
                     .HasConversion(
-                        v => string.Join(',', v),
-                        v => v.Split(',', StringSplitOptions.None));
+                        v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                        v => JsonSerializer.Deserialize<string[]>(v, (JsonSerializerOptions?)null) ?? Array.Empty<string>());
             });
         }
     }

@@ -151,7 +151,10 @@ public class DecklistAddingServiceTests
                 "Urza's Saga",
                 "Serra's Sanctum",
                 "Déjà Vu",
-                "_____ Goblin"
+                "_____ Goblin",
+                "Slaughter // Mayhem",
+                "Fire // Ice",
+                "Dead // Gone"
             }
         };
 
@@ -165,6 +168,10 @@ public class DecklistAddingServiceTests
         Assert.Contains("Jace, the Mind Sculptor", saved.CardNames);
         Assert.Contains("Urza's Saga", saved.CardNames);
         Assert.Contains("_____ Goblin", saved.CardNames);
+        Assert.Contains("Slaughter // Mayhem", saved.CardNames);
+        Assert.Contains("Fire // Ice", saved.CardNames);
+        Assert.Contains("Dead // Gone", saved.CardNames);
+        Assert.Equal(8, saved.CardNames.Length);
     }
 
     [Fact]
@@ -225,5 +232,57 @@ public class DecklistAddingServiceTests
         var saved = await _database.Decklists.FirstOrDefaultAsync(d => d.Name == "OrderedDeck");
         Assert.NotNull(saved);
         Assert.Equal(orderedCards, saved.CardNames);
+    }
+
+    [Fact]
+    public async Task Database_HandlesComplexCardNamesWithMultipleSpecialCharacters()
+    {
+        // Test that card names with multiple types of special characters work correctly
+        
+        // Arrange
+        var decklist = new Decklist
+        {
+            Id = 1,
+            Name = "Complex Cards Deck",
+            CardNames = new[]
+            {
+                "Teferi, Hero of Dominaria",
+                "Oko, Thief of Crowns",
+                "Nicol Bolas, Dragon-God",
+                "Wear // Tear",
+                "Turn // Burn",
+                "Catch // Release",
+                "Who // What // When // Where // Why",
+                "Odds // Ends",
+                "Search the City"
+            }
+        };
+
+        // Act
+        _database.Decklists.Add(decklist);
+        await _database.SaveChangesAsync();
+
+        // Assert
+        var saved = await _database.Decklists.FirstOrDefaultAsync(d => d.Name == "Complex Cards Deck");
+        Assert.NotNull(saved);
+        
+        // Verify all cards with commas
+        Assert.Contains("Teferi, Hero of Dominaria", saved.CardNames);
+        Assert.Contains("Oko, Thief of Crowns", saved.CardNames);
+        Assert.Contains("Nicol Bolas, Dragon-God", saved.CardNames);
+        
+        // Verify all split cards with //
+        Assert.Contains("Wear // Tear", saved.CardNames);
+        Assert.Contains("Turn // Burn", saved.CardNames);
+        Assert.Contains("Catch // Release", saved.CardNames);
+        Assert.Contains("Who // What // When // Where // Why", saved.CardNames);
+        Assert.Contains("Odds // Ends", saved.CardNames);
+        
+        // Verify total count
+        Assert.Equal(9, saved.CardNames.Length);
+        
+        // Verify no corruption or splitting occurred
+        var distinctCards = saved.CardNames.Distinct().ToArray();
+        Assert.Equal(saved.CardNames.Length, distinctCards.Length);
     }
 }
