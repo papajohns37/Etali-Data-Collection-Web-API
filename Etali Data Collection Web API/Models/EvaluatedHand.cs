@@ -14,6 +14,7 @@ namespace Etali_Data_Collection_Web_API.Models;
 /// <param name="MinimumCardsToCastEtali">The minimum number of cards required to generate enough mana to cast Etali. Must be 1-7 if CanCastEtali is true, or 8 if false.</param>
 /// <param name="DecklistId">The database ID of the decklist this hand was generated from.</param>
 /// <param name="DecklistName">The name of the decklist this hand was generated from.</param>
+/// <param name="LowestGambleOdds">The lowest Gamble odds value for this hand, representing probability.</param>
 /// <remarks>
 /// The evaluation rules:
 /// - If CanCastEtali is true, MinimumCardsToCastEtali should be between 1 and 7 (inclusive)
@@ -28,7 +29,8 @@ namespace Etali_Data_Collection_Web_API.Models;
 ///   "canCastEtali": true,
 ///   "minimumCardsToCastEtali": 3,
 ///   "decklistId": 1,
-///   "decklistName": "Fast Etali"
+///   "decklistName": "Fast Etali",
+///   "lowestGambleOdds": 0.75
 /// }
 /// </example>
 public record EvaluatedHand(
@@ -54,5 +56,8 @@ public record EvaluatedHand(
     int DecklistId,
     
     [property: Description("Name of the source decklist")]
-    string DecklistName
+    string DecklistName,
+    
+    [property: Description("Lowest Gamble odds value for this hand")]
+    float LowestGambleOdds
 );

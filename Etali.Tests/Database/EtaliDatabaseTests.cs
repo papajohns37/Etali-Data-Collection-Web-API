@@ -24,7 +24,8 @@ public class EtaliDatabaseTests
             true,
             5,
             1,
-            "TestDeck"
+            "TestDeck",
+            0.0f
         );
 
         // Act
@@ -112,7 +113,8 @@ public class EtaliDatabaseTests
                 i % 2 == 0,
                 i % 2 == 0 ? 8 : i,
                 1,
-                "TestDeck"
+                "TestDeck",
+                0.0f
             ));
         }
         context.SaveChanges();
@@ -171,7 +173,8 @@ public class EtaliDatabaseTests
             true,
             5,
             1,
-            "TestDeck"
+            "TestDeck",
+            0.0f
         );
 
         // Act - Save and retrieve
@@ -242,7 +245,7 @@ public class EtaliDatabaseTests
         var longCardName = new string('A', 200); // 200 character card name
         var cards = new[] { longCardName, "Card2", "Card3", "Card4", "Card5", "Card6", "Card7" };
         
-        var evaluatedHand = new EvaluatedHand(1, cards, 1, new[] { 6, 5, 4 }, true, 3, 1, "TestDeck");
+        var evaluatedHand = new EvaluatedHand(1, cards, 1, new[] { 6, 5, 4 }, true, 3, 1, "TestDeck", 0.0f);
 
         // Act
         context.EvaluatedHands.Add(evaluatedHand);
@@ -298,7 +301,7 @@ public class EtaliDatabaseTests
         using var context = new EtaliDatabase(options);
         
         // This is an edge case - normally wouldn't happen, but test the converter
-        var evaluatedHand = new EvaluatedHand(1, Array.Empty<string>(), 1, new[] { 6, 5, 4 }, false, 8, 1, "TestDeck");
+        var evaluatedHand = new EvaluatedHand(1, Array.Empty<string>(), 1, new[] { 6, 5, 4 }, false, 8, 1, "TestDeck", 0.0f);
 
         // Act
         context.EvaluatedHands.Add(evaluatedHand);
@@ -330,7 +333,8 @@ public class EtaliDatabaseTests
             true,
             4,
             1,
-            "TestDeck"
+            "TestDeck",
+            0.0f
         );
 
         // Act
@@ -361,13 +365,13 @@ public class EtaliDatabaseTests
         context.Decklists.Add(new Decklist { Id = 1, Name = "Deck1", CardNames = new[] { "C1" } });
         await context.SaveChangesAsync();
 
-        context.EvaluatedHands.Add(new EvaluatedHand(1, new[] { "C1", "C2", "C3", "C4", "C5", "C6", "C7" }, 1, new[] { 6, 5, 4 }, true, 3, 1, "Deck1"));
+        context.EvaluatedHands.Add(new EvaluatedHand(1, new[] { "C1", "C2", "C3", "C4", "C5", "C6", "C7" }, 1, new[] { 6, 5, 4 }, true, 3, 1, "Deck1", 0.0f));
         await context.SaveChangesAsync();
 
         context.Decklists.Add(new Decklist { Id = 2, Name = "Deck2", CardNames = new[] { "C2" } });
         await context.SaveChangesAsync();
 
-        context.EvaluatedHands.Add(new EvaluatedHand(2, new[] { "C1", "C2", "C3", "C4", "C5", "C6", "C7" }, 2, new[] { 5, 4, 3 }, false, 8, 2, "Deck2"));
+        context.EvaluatedHands.Add(new EvaluatedHand(2, new[] { "C1", "C2", "C3", "C4", "C5", "C6", "C7" }, 2, new[] { 5, 4, 3 }, false, 8, 2, "Deck2", 0.0f));
         await context.SaveChangesAsync();
 
         // Assert

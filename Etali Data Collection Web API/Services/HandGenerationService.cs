@@ -45,8 +45,9 @@ public class HandGenerationService : IHandGenerationService
         var selectedCards = SelectRandomCards(decklist.CardNames);
         var seatOrder = GenerateSeatOrder();
         var stickers = GenerateStickers();
+        var lowestGambleOdds = GenerateLowestGambleOdds();
 
-        return new Hand(handId, selectedCards, seatOrder, stickers, decklist.Id, decklist.Name);
+        return new Hand(handId, selectedCards, seatOrder, stickers, decklist.Id, decklist.Name, lowestGambleOdds);
     }
 
     /// <summary>
@@ -81,5 +82,28 @@ public class HandGenerationService : IHandGenerationService
             .OrderBy(_ => _random.Next())
             .Take(3)
             .ToArray();
+    }
+
+    /// <summary>
+    /// Generates the lowest Gamble odds value for this hand.
+    /// </summary>
+    /// <returns>A float value representing the lowest Gamble odds.</returns>
+    /// <remarks>
+    /// Generates a random value between 0 and 1 with a triangular probability distribution
+    /// where the probability density at any value x equals x itself.
+    /// This means higher values (closer to 1) are more likely than lower values.
+    /// </remarks>
+    private float GenerateLowestGambleOdds()
+    {
+        // Generate a uniform random number between 0 and 1
+        double uniformRandom = _random.NextDouble();
+        
+        // Transform to triangular distribution where probability density at x equals x
+        // Using inverse transform sampling: x = sqrt(2 * u) where u is uniform [0,1]
+        // This gives us a distribution where P(X ? x) = x²/2 normalized to [0,1]
+        double odds = Math.Sqrt(2.0 * uniformRandom);
+        
+        // Clamp to [0, 1] range and convert to float
+        return (float)Math.Min(Math.Max(odds, 0.0), 1.0);
     }
 }

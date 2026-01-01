@@ -12,6 +12,7 @@ namespace Etali_Data_Collection_Web_API.Models;
 /// <param name="Stickers">Array of exactly 3 randomly selected sticker values from the available pool.</param>
 /// <param name="DecklistId">The database ID of the decklist this hand was generated from.</param>
 /// <param name="DecklistName">The human-readable name of the decklist this hand was generated from.</param>
+/// <param name="LowestGambleOdds">The lowest Gamble odds value for this hand, representing probability.</param>
 /// <example>
 /// {
 ///   "id": 1,
@@ -19,7 +20,8 @@ namespace Etali_Data_Collection_Web_API.Models;
 ///   "seatOrder": 2,
 ///   "stickers": [6, 5, 4],
 ///   "decklistId": 1,
-///   "decklistName": "Fast Etali"
+///   "decklistName": "Fast Etali",
+///   "lowestGambleOdds": 0.75
 /// }
 /// </example>
 public record Hand(
@@ -39,5 +41,8 @@ public record Hand(
     int DecklistId,
     
     [property: Description("Name of the source decklist")]
-    string DecklistName
+    string DecklistName,
+    
+    [property: Description("Lowest Gamble odds value for this hand")]
+    float LowestGambleOdds
 );

@@ -314,4 +314,57 @@ public class HandGenerationServiceTests
         Assert.Equal(7, hand.Cards.Distinct().Count());
         Assert.All(hand.Cards, card => Assert.Contains(card, largeCardList));
     }
+
+    [Fact]
+    public void GenerateHand_LowestGambleOdds_IsWithinValidRange()
+    {
+        // Act
+        var hand = _service.GenerateHand(1, "TestDeck");
+
+        // Assert - LowestGambleOdds should be between 0 and 1 inclusive
+        Assert.InRange(hand.LowestGambleOdds, 0.0f, 1.0f);
+    }
+
+    [Fact]
+    public void GenerateHand_MultipleHands_ProducesVariedGambleOdds()
+    {
+        // Act - Generate multiple hands
+        var gambleOdds = new List<float>();
+        for (int i = 0; i < 50; i++)
+        {
+            var hand = _service.GenerateHand(i + 400, "TestDeck");
+            gambleOdds.Add(hand.LowestGambleOdds);
+        }
+
+        // Assert - Should have variety in gamble odds (not all the same)
+        var distinctOdds = gambleOdds.Distinct().Count();
+        Assert.True(distinctOdds > 10, "Gamble odds should vary significantly across multiple hands");
+        Assert.All(gambleOdds, odds => Assert.InRange(odds, 0.0f, 1.0f));
+    }
+
+    [Fact]
+    public void GenerateHand_LowestGambleOdds_FollowsExpectedDistribution()
+    {
+        // Act - Generate many hands to test distribution
+        var gambleOdds = new List<float>();
+        for (int i = 0; i < 1000; i++)
+        {
+            var hand = _service.GenerateHand(i + 500, "TestDeck");
+            gambleOdds.Add(hand.LowestGambleOdds);
+        }
+
+        // Assert - With triangular distribution where density = x:
+        // - Values above 0.7 should be more common than values below 0.3
+        var countAbove07 = gambleOdds.Count(x => x >= 0.7f);
+        var countBelow03 = gambleOdds.Count(x => x < 0.3f);
+        
+        // Theoretically: P(X >= 0.7) ? 0.505, P(X < 0.3) ? 0.045
+        // So countAbove07 should be much larger than countBelow03
+        Assert.True(countAbove07 > countBelow03 * 3, 
+            $"Expected higher values to be more common. Above 0.7: {countAbove07}, Below 0.3: {countBelow03}");
+        
+        // Average should be around 0.816 for this distribution (2/?2 / ?2 ? 0.816)
+        var average = gambleOdds.Average();
+        Assert.InRange(average, 0.75, 0.87);
+    }
 }

@@ -99,7 +99,8 @@ public class HandEvaluationServiceTests
             true,
             3,
             1,
-            "Deck1"
+            "Deck1",
+            0.0f
         );
         var eval2 = new EvaluatedHand(
             2,
@@ -109,7 +110,8 @@ public class HandEvaluationServiceTests
             false,
             8,
             2,
-            "Deck2"
+            "Deck2",
+            0.0f
         );
 
         // Act
@@ -161,8 +163,8 @@ public class HandEvaluationServiceTests
     public void RecordEvaluation_DuplicateId_ThrowsException()
     {
         // Arrange
-        var evaluation1 = new EvaluatedHand(1, new[] { "C1", "C2", "C3", "C4", "C5", "C6", "C7" }, 1, new[] { 6, 5, 4 }, true, 3, 1, "Deck1");
-        var evaluation2 = new EvaluatedHand(1, new[] { "D1", "D2", "D3", "D4", "D5", "D6", "D7" }, 2, new[] { 5, 4, 3 }, false, 8, 1, "Deck1");
+        var evaluation1 = new EvaluatedHand(1, new[] { "C1", "C2", "C3", "C4", "C5", "C6", "C7" }, 1, new[] { 6, 5, 4 }, true, 3, 1, "Deck1", 0.0f);
+        var evaluation2 = new EvaluatedHand(1, new[] { "D1", "D2", "D3", "D4", "D5", "D6", "D7" }, 2, new[] { 5, 4, 3 }, false, 8, 1, "Deck1", 0.0f);
 
         // Act
         _service.RecordEvaluation(evaluation1);
@@ -185,7 +187,8 @@ public class HandEvaluationServiceTests
             false,
             8,
             1,
-            "TestDeck"
+            "TestDeck",
+            0.0f
         );
 
         // Act
@@ -212,7 +215,8 @@ public class HandEvaluationServiceTests
                 true,
                 minCards,
                 1,
-                "TestDeck"
+                "TestDeck",
+                0.0f
             );
 
             _service.RecordEvaluation(evaluation);
@@ -263,7 +267,7 @@ public class HandEvaluationServiceTests
         // Arrange
         var cards = new[] { "Sol Ring", "Mana Vault", "Ancient Tomb", "City of Traitors", "Lotus Petal", "Chrome Mox", "Mox Diamond" };
         var stickers = new[] { 6, 5, 4 };
-        var evaluation = new EvaluatedHand(999, cards, 3, stickers, true, 4, 10, "SpecialDeck");
+        var evaluation = new EvaluatedHand(999, cards, 3, stickers, true, 4, 10, "SpecialDeck", 0.85f);
 
         // Act
         _service.RecordEvaluation(evaluation);
@@ -278,6 +282,7 @@ public class HandEvaluationServiceTests
         Assert.Equal(4, saved.MinimumCardsToCastEtali);
         Assert.Equal(10, saved.DecklistId);
         Assert.Equal("SpecialDeck", saved.DecklistName);
+        Assert.Equal(0.85f, saved.LowestGambleOdds);
     }
 
     private EvaluatedHand CreateTestEvaluation(int id)
@@ -290,7 +295,8 @@ public class HandEvaluationServiceTests
             true,
             5,
             1,
-            "TestDeck"
+            "TestDeck",
+            0.0f
         );
     }
 }

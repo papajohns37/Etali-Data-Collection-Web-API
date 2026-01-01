@@ -153,7 +153,8 @@ public class ApiEndpointsTests : IClassFixture<CustomWebApplicationFactory>
             true,
             5,
             1,
-            "TestDeck"
+            "TestDeck",
+            0.0f
         );
 
         // Act
@@ -339,7 +340,8 @@ public class ApiEndpointsTests : IClassFixture<CustomWebApplicationFactory>
             true,
             5,
             1,
-            "TestDeck"
+            "TestDeck",
+            0.0f
         );
 
         // Act
@@ -362,7 +364,8 @@ public class ApiEndpointsTests : IClassFixture<CustomWebApplicationFactory>
             false,
             8,
             1,
-            "TestDeck"
+            "TestDeck",
+            0.0f
         );
 
         // Act
@@ -385,7 +388,8 @@ public class ApiEndpointsTests : IClassFixture<CustomWebApplicationFactory>
             true,
             5,
             1,
-            "TestDeck"
+            "TestDeck",
+            0.0f
         );
 
         // Act
@@ -662,7 +666,8 @@ public class ApiEndpointsTests : IClassFixture<CustomWebApplicationFactory>
             true,
             5,
             hand.DecklistId,
-            hand.DecklistName
+            hand.DecklistName,
+            hand.LowestGambleOdds
         );
         var evalResponse = await _client.PostAsJsonAsync("/hand/evaluate", evaluation);
         Assert.Equal(HttpStatusCode.OK, evalResponse.StatusCode);
