@@ -80,6 +80,13 @@ namespace Etali_Data_Collection_Web_API.Services
                             {
                                 var cardData = cardProperty.Value;
                                 
+                                // Get the quantity of this card
+                                int quantity = 1;
+                                if (cardData.TryGetProperty("quantity", out var quantityProperty))
+                                {
+                                    quantity = quantityProperty.GetInt32();
+                                }
+                                
                                 // Get the card information
                                 if (cardData.TryGetProperty("card", out var cardInfo))
                                 {
@@ -92,17 +99,40 @@ namespace Etali_Data_Collection_Web_API.Services
                                         name = cardName.GetString() ?? string.Empty;
                                     }
                                     
-                                    // Extract card type
-                                    if (cardInfo.TryGetProperty("type", out var cardType))
+                                    // Extract card type - try multiple approaches
+                                    // 1. Try "type_line" at card level (standard single-faced cards)
+                                    if (cardInfo.TryGetProperty("type_line", out var cardTypeLine))
+                                    {
+                                        type = cardTypeLine.GetString() ?? string.Empty;
+                                    }
+                                    // 2. If not found, check card_faces array (double-faced or modal cards)
+                                    else if (cardInfo.TryGetProperty("card_faces", out var cardFaces) && 
+                                             cardFaces.ValueKind == JsonValueKind.Array &&
+                                             cardFaces.GetArrayLength() > 0)
+                                    {
+                                        // Get the type_line from the first card face
+                                        var firstFace = cardFaces[0];
+                                        if (firstFace.TryGetProperty("type_line", out var faceTypeLine))
+                                        {
+                                            type = faceTypeLine.GetString() ?? string.Empty;
+                                        }
+                                    }
+                                    // 3. Fall back to "type" if it's a string (some APIs might use this)
+                                    else if (cardInfo.TryGetProperty("type", out var cardType) && 
+                                             cardType.ValueKind == JsonValueKind.String)
                                     {
                                         type = cardType.GetString() ?? string.Empty;
                                     }
                                     
-                                    cards.Add(new Card
+                                    // Add the card 'quantity' times to match the deck composition
+                                    for (int i = 0; i < quantity; i++)
                                     {
-                                        Name = name,
-                                        Type = type
-                                    });
+                                        cards.Add(new Card
+                                        {
+                                            Name = name,
+                                            Type = type
+                                        });
+                                    }
                                 }
                             }
                         }
@@ -110,6 +140,7 @@ namespace Etali_Data_Collection_Web_API.Services
                 }
             }
             
+            _logger.LogInformation($"Extracted {cards.Count} total cards from mainboard");
             return cards;
         }
 

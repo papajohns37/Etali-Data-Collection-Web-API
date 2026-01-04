@@ -107,14 +107,6 @@ app.UseSwaggerUI(options =>
 
 // API Endpoints
 
-/// <summary>
-/// Generates a new random hand of cards from a specific decklist.
-/// </summary>
-/// <param name="decklistName">The name of the decklist to generate a hand from (case-insensitive).</param>
-/// <returns>A randomly generated hand with 7 cards, seat order, and stickers.</returns>
-/// <response code="200">Returns the generated hand with all metadata.</response>
-/// <response code="404">The specified decklist was not found.</response>
-/// <response code="400">The decklistName parameter was not provided.</response>
 app.MapGet("/hand", (string decklistName, IHandGenerationService handGenerationService, IHandEvaluationService handEvaluationService) =>
 {
     try
@@ -132,19 +124,24 @@ app.MapGet("/hand", (string decklistName, IHandGenerationService handGenerationS
 .WithOpenApi(operation => new(operation)
 {
     Summary = "Generate a random hand",
-    Description = "Generates a new random hand of 7 cards from the specified decklist, including seat order (1-4) and 3 random stickers. The hand is assigned a unique ID for later evaluation."
+    Description = @"Generates a new random hand of 7 cards from the specified decklist.
+
+Each card in the hand includes:
+- name: The card name
+- type: The card type (e.g., Artifact, Creature, Land, Instant, Sorcery)
+
+Additional hand properties:
+- Seat order (1-4) representing turn position
+- 3 random stickers applied to Etali
+- Unique hand ID for later evaluation
+- Lowest Gamble odds value for probability calculations
+
+The decklistName parameter is case-insensitive."
 })
 .Produces<Hand>(StatusCodes.Status200OK)
 .Produces(StatusCodes.Status404NotFound)
 .Produces(StatusCodes.Status400BadRequest);
 
-/// <summary>
-/// Records an evaluation of a hand for its ability to cast Etali.
-/// </summary>
-/// <param name="evaluation">The evaluated hand data including whether Etali can be cast and minimum cards needed.</param>
-/// <returns>Confirmation of the recorded evaluation.</returns>
-/// <response code="200">The hand evaluation was successfully recorded.</response>
-/// <response code="400">The evaluation data was invalid or incomplete.</response>
 app.MapPost("/hand/evaluate", (EvaluatedHand evaluation, IHandEvaluationService handEvaluationService) =>
 {
     handEvaluationService.RecordEvaluation(evaluation);
@@ -156,20 +153,26 @@ app.MapPost("/hand/evaluate", (EvaluatedHand evaluation, IHandEvaluationService 
 .WithOpenApi(operation => new(operation)
 {
     Summary = "Evaluate a hand",
-    Description = "Records the user's evaluation of whether a hand can cast Etali and the minimum number of cards required. If CanCastEtali is false, MinimumCardsToCastEtali should be 8."
+    Description = @"Records the user's evaluation of whether a hand can cast Etali.
+
+Request body must include:
+- id: Hand identifier (from GET /hand)
+- cards: Array of 7 Card objects with name and type
+- seatOrder: Player position (1-4)
+- stickers: Array of 3 sticker values
+- canCastEtali: true if castable, false otherwise
+- minimumCardsToCastEtali: 1-7 if castable, 8 if not
+- decklistId: Source decklist ID
+- decklistName: Source decklist name
+- lowestGambleOdds: Gamble probability value
+
+Evaluation rules:
+- If CanCastEtali is true, MinimumCardsToCastEtali should be 1-7
+- If CanCastEtali is false, MinimumCardsToCastEtali should be 8"
 })
 .Produces(StatusCodes.Status200OK)
 .Produces(StatusCodes.Status400BadRequest);
 
-/// <summary>
-/// Adds a new decklist from a Moxfield URL.
-/// </summary>
-/// <param name="link">The Moxfield URL for the decklist (e.g., https://www.moxfield.com/decks/...).</param>
-/// <param name="name">A friendly name to assign to this decklist for easy reference.</param>
-/// <returns>Confirmation that the decklist was added.</returns>
-/// <response code="200">The decklist was successfully imported and saved.</response>
-/// <response code="400">Required parameters were missing or the URL was invalid.</response>
-/// <response code="500">An error occurred while fetching or parsing the decklist.</response>
 app.MapPost("/decklist", async (string link, string name, IDecklistAddingService decklistAddingService) =>
 {
     await decklistAddingService.AddDecklist(link, name);
@@ -180,17 +183,25 @@ app.MapPost("/decklist", async (string link, string name, IDecklistAddingService
 .WithOpenApi(operation => new(operation)
 {
     Summary = "Import a decklist from Moxfield",
-    Description = "Fetches a decklist from the Moxfield API and stores it in the database. The decklist can then be used to generate random hands. Rate limited to 1 request per second."
+    Description = @"Fetches a decklist from the Moxfield API and stores it in the database.
+
+The service extracts:
+- Card names
+- Card types (from Moxfield's type line)
+- Moxfield metadata (URL and deck ID)
+
+Only mainboard cards are imported. The decklist can then be used to generate random hands.
+
+Rate limited to 1 request per second to respect Moxfield API limits.
+
+Parameters:
+- link: Full Moxfield URL (e.g., https://www.moxfield.com/decks/abc123)
+- name: Friendly name for the decklist"
 })
 .Produces(StatusCodes.Status200OK)
 .Produces(StatusCodes.Status400BadRequest)
 .Produces(StatusCodes.Status500InternalServerError);
 
-/// <summary>
-/// Retrieves all stored decklists.
-/// </summary>
-/// <returns>A list of all decklists in the database.</returns>
-/// <response code="200">Returns the list of all decklists with their names and card counts.</response>
 app.MapGet("/decklists", async (EtaliDatabase database) =>
 {
     return await database.Decklists.ToListAsync();
@@ -200,15 +211,20 @@ app.MapGet("/decklists", async (EtaliDatabase database) =>
 .WithOpenApi(operation => new(operation)
 {
     Summary = "Get all decklists",
-    Description = "Returns all decklists currently stored in the database, including their IDs, names, and card lists."
+    Description = @"Returns all decklists currently stored in the database.
+
+Each decklist includes:
+- id: Unique identifier
+- name: Decklist name
+- cards: Array of Card objects with name and type
+- moxfieldUrl: Source URL (if imported from Moxfield)
+- moxfieldId: Moxfield deck ID (if imported)
+- createdAt: UTC timestamp when added
+
+Typically contains 99 cards for Commander format."
 })
 .Produces<List<Decklist>>(StatusCodes.Status200OK);
 
-/// <summary>
-/// Retrieves all evaluated hands from the database.
-/// </summary>
-/// <returns>A list of all hand evaluations that have been recorded.</returns>
-/// <response code="200">Returns the complete collection of all evaluated hands.</response>
 app.MapGet("/hands/evaluated", (IHandEvaluationService handEvaluationService) =>
 {
     return handEvaluationService.GetAllEvaluations();
@@ -218,17 +234,19 @@ app.MapGet("/hands/evaluated", (IHandEvaluationService handEvaluationService) =>
 .WithOpenApi(operation => new(operation)
 {
     Summary = "Get all evaluated hands",
-    Description = "Returns all hand evaluations that have been recorded, including whether Etali could be cast and the minimum cards needed."
+    Description = @"Returns all hand evaluations that have been recorded.
+
+Each evaluation includes:
+- All original hand data (cards, stickers, seat order)
+- canCastEtali: Whether Etali could be cast
+- minimumCardsToCastEtali: Minimum cards needed (1-7 if yes, 8 if no)
+- decklistId and decklistName: Source information
+- lowestGambleOdds: Gamble probability value
+
+Used for statistical analysis and data export."
 })
 .Produces<IReadOnlyList<EvaluatedHand>>(StatusCodes.Status200OK);
 
-/// <summary>
-/// Retrieves statistical analysis for a specific decklist.
-/// </summary>
-/// <param name="decklistId">The unique identifier of the decklist.</param>
-/// <returns>Comprehensive statistics including success rates and confidence intervals for each hand size.</returns>
-/// <response code="200">Returns statistical analysis for the decklist.</response>
-/// <response code="404">The specified decklist was not found.</response>
 app.MapGet("/decklists/{decklistId}/statistics", async (int decklistId, IStatisticsService statisticsService) =>
 {
     var statistics = await statisticsService.GetDecklistStatistics(decklistId);
@@ -245,17 +263,24 @@ app.MapGet("/decklists/{decklistId}/statistics", async (int decklistId, IStatist
 .WithOpenApi(operation => new(operation)
 {
     Summary = "Get decklist statistics",
-    Description = @"Returns comprehensive statistical analysis for a specific decklist based on all evaluated hands.
+    Description = @"Returns comprehensive statistical analysis for a specific decklist.
 
 Statistics include:
 - Success rates for each hand size (3-7 cards)
 - 90% confidence intervals using Wilson score interval method
-- Overall mulligan probability (two 7-card hands, then 6, 5, 4, 3)
+- Overall mulligan probability calculation
 - Confidence intervals for overall probability
 
-Hand size logic: A hand with minimumCardsToCastEtali=4 counts as success for hand sizes 4, 5, 6, and 7.
+Hand size logic:
+A hand with minimumCardsToCastEtali=4 counts as success for hand sizes 4, 5, 6, and 7.
 
-If no hands have been tested, returns totalHandsTested: 0 with empty statistics."
+Mulligan scenario:
+Simulates drawing two 7-card hands, then 6, 5, 4, and 3-card hands if needed.
+
+If no hands have been tested yet, returns:
+- totalHandsTested: 0
+- handSizeStatistics: []
+- overallMulliganProbability: 0"
 })
 .Produces<DecklistStatistics>(StatusCodes.Status200OK)
 .Produces(StatusCodes.Status404NotFound);

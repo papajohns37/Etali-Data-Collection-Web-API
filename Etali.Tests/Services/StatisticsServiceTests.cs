@@ -288,6 +288,7 @@ public class StatisticsServiceTests
         var result = await _service.GetDecklistStatistics(1);
 
         // Assert
+        Assert.NotNull(result);
         var size7 = result.HandSizeStatistics.First(s => s.HandSize == 7);
         Assert.Equal(0.5, size7.Probability);
         
@@ -314,6 +315,7 @@ public class StatisticsServiceTests
         var result = await _service.GetDecklistStatistics(1);
 
         // Assert
+        Assert.NotNull(result);
         var size7 = result.HandSizeStatistics.First(s => s.HandSize == 7);
         Assert.Equal(0.5, size7.Probability, precision: 5);
         
