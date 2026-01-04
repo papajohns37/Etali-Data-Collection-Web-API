@@ -1,4 +1,5 @@
 using Etali_Data_Collection_Web_API;
+using Etali_Data_Collection_Web_API.Configuration;
 using Etali_Data_Collection_Web_API.Models;
 using Etali_Data_Collection_Web_API.Services;
 using Microsoft.EntityFrameworkCore;
@@ -10,16 +11,24 @@ namespace Etali.Tests.Services;
 
 /// <summary>
 /// Tests for DecklistAddingService focusing on data parsing and database operations.
-/// Note: External HTTP calls and PuppeteerSharp are not tested as they require integration testing.
+/// Note: External HTTP calls to Moxfield API are not tested as they require integration testing.
 /// </summary>
 public class DecklistAddingServiceTests
 {
     private readonly Mock<ILogger<DecklistAddingService>> _mockLogger;
+    private readonly Mock<IRateLimiter> _mockRateLimiter;
+    private readonly MoxfieldConfiguration _mockConfig;
     private readonly EtaliDatabase _database;
 
     public DecklistAddingServiceTests()
     {
         _mockLogger = new Mock<ILogger<DecklistAddingService>>();
+        _mockRateLimiter = new Mock<IRateLimiter>();
+        _mockConfig = new MoxfieldConfiguration 
+        { 
+            BaseUrl = "https://api2.moxfield.com/v3/decks/all/",
+            ApiKey = "test-key"
+        };
         
         var options = new DbContextOptionsBuilder<EtaliDatabase>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
@@ -31,7 +40,7 @@ public class DecklistAddingServiceTests
     public void DecklistAddingService_CanBeConstructed()
     {
         // Act
-        var service = new DecklistAddingService(_database, _mockLogger.Object);
+        var service = new DecklistAddingService(_database, _mockLogger.Object, _mockConfig, _mockRateLimiter.Object);
 
         // Assert
         Assert.NotNull(service);
@@ -41,7 +50,7 @@ public class DecklistAddingServiceTests
     public void DecklistAddingService_ImplementsInterface()
     {
         // Act
-        var service = new DecklistAddingService(_database, _mockLogger.Object);
+        var service = new DecklistAddingService(_database, _mockLogger.Object, _mockConfig, _mockRateLimiter.Object);
 
         // Assert
         Assert.IsAssignableFrom<IDecklistAddingService>(service);
@@ -55,7 +64,7 @@ public class DecklistAddingServiceTests
         // but we can verify the database interaction pattern
         
         // Arrange
-        var service = new DecklistAddingService(_database, _mockLogger.Object);
+        var service = new DecklistAddingService(_database, _mockLogger.Object, _mockConfig, _mockRateLimiter.Object);
         
         // Manually simulate what AddDecklist would do
         var nextId = _database.Decklists.Any() ? _database.Decklists.Max(d => d.Id) + 1 : 1;
@@ -175,17 +184,15 @@ public class DecklistAddingServiceTests
     }
 
     [Fact]
-    public void DecklistAddingService_LoggerIsUsed()
+    public void DecklistAddingService_RequiresRateLimiter()
     {
-        // Verify that the service can work with the logger
+        // Verify that the service requires rate limiter dependency
         
         // Arrange & Act
-        var service = new DecklistAddingService(_database, _mockLogger.Object);
+        var service = new DecklistAddingService(_database, _mockLogger.Object, _mockConfig, _mockRateLimiter.Object);
 
-        // Assert - Verify the logger was accepted
+        // Assert
         Assert.NotNull(service);
-        // In real scenarios, we would verify logger calls, but we can't test
-        // AddDecklist without external dependencies
     }
 
     [Fact]

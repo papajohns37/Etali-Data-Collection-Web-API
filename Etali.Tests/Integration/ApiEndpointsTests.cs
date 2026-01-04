@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using Etali_Data_Collection_Web_API;
+using Etali_Data_Collection_Web_API.Configuration;
 using Etali_Data_Collection_Web_API.Models;
 using Etali_Data_Collection_Web_API.Services;
 using Microsoft.AspNetCore.Hosting;
@@ -714,27 +715,34 @@ public class ApiEndpointsTests : IClassFixture<CustomWebApplicationFactory>
 
     /// <summary>
     /// Integration test that makes an actual HTTP call to Moxfield to fetch a real decklist.
-    /// This test requires internet connectivity and may be slow (10-30 seconds) due to PuppeteerSharp browser automation.
-    /// It verifies the complete flow of fetching, parsing, and storing a decklist from Moxfield.
+    /// This test requires internet connectivity and Moxfield API key configured in User Secrets.
+    /// It verifies the complete flow of fetching, parsing, and storing a decklist from Moxfield using HttpClient.
     /// </summary>
     [Fact]
-    public async Task AddDecklist_FetchesRealMoxfieldDeck_Has77MainboardCardsAndKnownCards()
+    public async Task AddDecklist_FetchesRealMoxfieldDeck_Has99MainboardCardsAndKnownCards()
     {
         // Arrange
         using var scope = _factory.Services.CreateScope();
         var database = scope.ServiceProvider.GetRequiredService<EtaliDatabase>();
         var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
         var logger = loggerFactory.CreateLogger<DecklistAddingService>();
-        var service = new DecklistAddingService(database, logger);
+        var moxfieldConfig = scope.ServiceProvider.GetRequiredService<MoxfieldConfiguration>();
+        var rateLimiter = scope.ServiceProvider.GetRequiredService<IRateLimiter>();
+        
+        var service = new DecklistAddingService(database, logger, moxfieldConfig, rateLimiter);
         
         var moxfieldUrl = "https://moxfield.com/decks/JhWK-MfmY0W1V5feboKLxQ";
         var decklistName = "Moxfield Integration Test Deck";
         
         // Known cards that should be in this decklist
         var expectedCards = new[] { "Treasonous Ogre", "Orcish Lumberjack", "Mana Vault", "Ancient Tomb" };
+        
+        var beforeAdd = DateTime.UtcNow.AddSeconds(-1);
 
         // Act
         await service.AddDecklist(moxfieldUrl, decklistName);
+        
+        var afterAdd = DateTime.UtcNow.AddSeconds(1);
 
         // Assert
         var savedDecklist = await database.Decklists.FirstOrDefaultAsync(d => d.Name == decklistName);
@@ -755,6 +763,17 @@ public class ApiEndpointsTests : IClassFixture<CustomWebApplicationFactory>
         
         // Verify the decklist was assigned a valid ID
         Assert.True(savedDecklist.Id > 0);
+        
+        // Verify Moxfield metadata was captured
+        Assert.NotNull(savedDecklist.MoxfieldUrl);
+        Assert.NotNull(savedDecklist.MoxfieldId);
+        Assert.Contains("moxfield.com", savedDecklist.MoxfieldUrl);
+        Assert.Equal("JhWK-MfmY0W1V5feboKLxQ", savedDecklist.MoxfieldId);
+        
+        // Verify CreatedAt timestamp is set and within reasonable range
+        Assert.NotEqual(default(DateTime), savedDecklist.CreatedAt);
+        Assert.InRange(savedDecklist.CreatedAt, beforeAdd, afterAdd);
+        Assert.Equal(DateTimeKind.Utc, savedDecklist.CreatedAt.Kind);
     }
 
     #endregion
@@ -803,7 +822,10 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
                         {
                             "Card1", "Card2", "Card3", "Card4", "Card5",
                             "Card6", "Card7", "Card8", "Card9", "Card10"
-                        }
+                        },
+                        MoxfieldUrl = "https://www.moxfield.com/decks/test123",
+                        MoxfieldId = "test123",
+                        CreatedAt = DateTime.UtcNow
                     });
                     db.SaveChanges();
                     _seeded = true;

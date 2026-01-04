@@ -25,4 +25,8 @@
     <ProjectReference Include="..\Etali Data Collection Web API\Etali Data Collection Web API.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Integration\" />
+  </ItemGroup>
+
 </Project>

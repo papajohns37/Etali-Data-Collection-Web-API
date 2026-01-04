@@ -89,21 +89,17 @@ public class HandGenerationService : IHandGenerationService
     /// </summary>
     /// <returns>A float value representing the lowest Gamble odds.</returns>
     /// <remarks>
-    /// Generates a random value between 0 and 1 with a triangular probability distribution
-    /// where the probability density at any value x equals x itself.
-    /// This means higher values (closer to 1) are more likely than lower values.
+    /// Generates a uniformly distributed random value between 0 and 1.
+    /// This value is used to determine Gamble card success: if the Gamble probability
+    /// is greater than this value, Gamble succeeds.
+    /// For example: with 50% Gamble odds (0.5), this value will be less than 0.5
+    /// exactly 50% of the time, making Gamble succeed 50% of the time.
+    /// This ensures that over a large sample, Gamble success rate matches its probability.
     /// </remarks>
     private float GenerateLowestGambleOdds()
     {
         // Generate a uniform random number between 0 and 1
-        double uniformRandom = _random.NextDouble();
-        
-        // Transform to triangular distribution where probability density at x equals x
-        // Using inverse transform sampling: x = sqrt(2 * u) where u is uniform [0,1]
-        // This gives us a distribution where P(X ? x) = x²/2 normalized to [0,1]
-        double odds = Math.Sqrt(2.0 * uniformRandom);
-        
-        // Clamp to [0, 1] range and convert to float
-        return (float)Math.Min(Math.Max(odds, 0.0), 1.0);
+        // This gives equal probability to all values in the range
+        return (float)_random.NextDouble();
     }
 }

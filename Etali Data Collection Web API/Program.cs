@@ -24,21 +24,19 @@ builder.Services.AddCors(options =>
 
 // Register application services
 builder.Services.AddSingleton<GameConfiguration>();
+
+// Configure Moxfield API settings
+var moxfieldConfig = builder.Configuration.GetSection("MoxfieldApi").Get<MoxfieldConfiguration>() 
+    ?? new MoxfieldConfiguration();
+builder.Services.AddSingleton(moxfieldConfig);
+
+// Register rate limiter for Moxfield API (1 request per second)
+builder.Services.AddSingleton<IRateLimiter>(new RateLimiter(TimeSpan.FromSeconds(1)));
+
 builder.Services.AddScoped<IHandEvaluationService, HandEvaluationService>();
 builder.Services.AddScoped<IHandGenerationService, HandGenerationService>();
 builder.Services.AddScoped<IDecklistAddingService, DecklistAddingService>();
-
-builder.Services.AddHttpClient("MoxfieldClient", client =>
-{
-    client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
-    client.DefaultRequestHeaders.Add("Accept", "application/json, text/plain, */*");
-    client.DefaultRequestHeaders.Add("Accept-Language", "en-US,en;q=0.9");
-    client.DefaultRequestHeaders.Add("Accept-Encoding", "gzip, deflate, br");
-}).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
-{
-    AutomaticDecompression = System.Net.DecompressionMethods.All,
-    UseCookies = false
-});
+builder.Services.AddScoped<IStatisticsService, StatisticsService>();
 
 //Add db context
 builder.Services.AddDbContext<EtaliDatabase>(options => options.UseInMemoryDatabase("EtaliDatabase"));
@@ -182,7 +180,7 @@ app.MapPost("/decklist", async (string link, string name, IDecklistAddingService
 .WithOpenApi(operation => new(operation)
 {
     Summary = "Import a decklist from Moxfield",
-    Description = "Fetches a decklist from Moxfield using PuppeteerSharp and stores it in the database. The decklist can then be used to generate random hands."
+    Description = "Fetches a decklist from the Moxfield API and stores it in the database. The decklist can then be used to generate random hands. Rate limited to 1 request per second."
 })
 .Produces(StatusCodes.Status200OK)
 .Produces(StatusCodes.Status400BadRequest)
@@ -223,6 +221,44 @@ app.MapGet("/hands/evaluated", (IHandEvaluationService handEvaluationService) =>
     Description = "Returns all hand evaluations that have been recorded, including whether Etali could be cast and the minimum cards needed."
 })
 .Produces<IReadOnlyList<EvaluatedHand>>(StatusCodes.Status200OK);
+
+/// <summary>
+/// Retrieves statistical analysis for a specific decklist.
+/// </summary>
+/// <param name="decklistId">The unique identifier of the decklist.</param>
+/// <returns>Comprehensive statistics including success rates and confidence intervals for each hand size.</returns>
+/// <response code="200">Returns statistical analysis for the decklist.</response>
+/// <response code="404">The specified decklist was not found.</response>
+app.MapGet("/decklists/{decklistId}/statistics", async (int decklistId, IStatisticsService statisticsService) =>
+{
+    var statistics = await statisticsService.GetDecklistStatistics(decklistId);
+    
+    if (statistics == null)
+    {
+        return Results.NotFound(new { error = $"Decklist with ID {decklistId} not found." });
+    }
+    
+    return Results.Ok(statistics);
+})
+.WithName("GetDecklistStatistics")
+.WithTags("Statistics")
+.WithOpenApi(operation => new(operation)
+{
+    Summary = "Get decklist statistics",
+    Description = @"Returns comprehensive statistical analysis for a specific decklist based on all evaluated hands.
+
+Statistics include:
+- Success rates for each hand size (3-7 cards)
+- 90% confidence intervals using Wilson score interval method
+- Overall mulligan probability (two 7-card hands, then 6, 5, 4, 3)
+- Confidence intervals for overall probability
+
+Hand size logic: A hand with minimumCardsToCastEtali=4 counts as success for hand sizes 4, 5, 6, and 7.
+
+If no hands have been tested, returns totalHandsTested: 0 with empty statistics."
+})
+.Produces<DecklistStatistics>(StatusCodes.Status200OK)
+.Produces(StatusCodes.Status404NotFound);
 
 app.Run();
 

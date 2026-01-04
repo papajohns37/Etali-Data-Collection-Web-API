@@ -343,28 +343,143 @@ public class HandGenerationServiceTests
     }
 
     [Fact]
-    public void GenerateHand_LowestGambleOdds_FollowsExpectedDistribution()
+    public void GenerateHand_LowestGambleOdds_SupportsGambleMechanic_50Percent()
     {
+        // This test verifies that with 50% Gamble odds, the card succeeds 50% of the time
+        // Gamble succeeds when: gambleOdds < lowestGambleOdds is FALSE (i.e., lowestGambleOdds < gambleOdds)
+        
         // Act - Generate many hands to test distribution
-        var gambleOdds = new List<float>();
-        for (int i = 0; i < 1000; i++)
+        const int sampleSize = 1000;
+        const double gambleOdds = 0.5; // 50% success rate
+        var successCount = 0;
+
+        for (int i = 0; i < sampleSize; i++)
         {
             var hand = _service.GenerateHand(i + 500, "TestDeck");
-            gambleOdds.Add(hand.LowestGambleOdds);
+            if (hand.LowestGambleOdds < gambleOdds)
+            {
+                successCount++; // Gamble succeeds
+            }
         }
 
-        // Assert - With triangular distribution where density = x:
-        // - Values above 0.7 should be more common than values below 0.3
-        var countAbove07 = gambleOdds.Count(x => x >= 0.7f);
-        var countBelow03 = gambleOdds.Count(x => x < 0.3f);
+        // Assert - Should be close to 50% (within reasonable statistical margin)
+        double successRate = (double)successCount / sampleSize;
+        Assert.InRange(successRate, 0.45, 0.55); // 50% ± 5%
+    }
+
+    [Fact]
+    public void GenerateHand_LowestGambleOdds_SupportsGambleMechanic_10Percent()
+    {
+        // This test verifies that with 10% Gamble odds, the card succeeds 10% of the time
         
-        // Theoretically: P(X >= 0.7) ? 0.505, P(X < 0.3) ? 0.045
-        // So countAbove07 should be much larger than countBelow03
-        Assert.True(countAbove07 > countBelow03 * 3, 
-            $"Expected higher values to be more common. Above 0.7: {countAbove07}, Below 0.3: {countBelow03}");
+        // Act - Generate many hands
+        const int sampleSize = 1000;
+        const double gambleOdds = 0.1; // 10% success rate
+        var successCount = 0;
+
+        for (int i = 0; i < sampleSize; i++)
+        {
+            var hand = _service.GenerateHand(i + 1500, "TestDeck");
+            if (hand.LowestGambleOdds < gambleOdds)
+            {
+                successCount++; // Gamble succeeds
+            }
+        }
+
+        // Assert - Should be close to 10% (within reasonable statistical margin)
+        double successRate = (double)successCount / sampleSize;
+        Assert.InRange(successRate, 0.06, 0.14); // 10% ± 4%
+    }
+
+    [Fact]
+    public void GenerateHand_LowestGambleOdds_SupportsGambleMechanic_90Percent()
+    {
+        // This test verifies that with 90% Gamble odds, the card succeeds 90% of the time
         
-        // Average should be around 0.816 for this distribution (2/?2 / ?2 ? 0.816)
-        var average = gambleOdds.Average();
-        Assert.InRange(average, 0.75, 0.87);
+        // Act - Generate many hands
+        const int sampleSize = 1000;
+        const double gambleOdds = 0.9; // 90% success rate
+        var successCount = 0;
+
+        for (int i = 0; i < sampleSize; i++)
+        {
+            var hand = _service.GenerateHand(i + 2500, "TestDeck");
+            if (hand.LowestGambleOdds < gambleOdds)
+            {
+                successCount++; // Gamble succeeds
+            }
+        }
+
+        // Assert - Should be close to 90% (within reasonable statistical margin)
+        double successRate = (double)successCount / sampleSize;
+        Assert.InRange(successRate, 0.86, 0.94); // 90% ± 4%
+    }
+
+    [Fact]
+    public void GenerateHand_LowestGambleOdds_SupportsGambleMechanic_VariousRatios()
+    {
+        // This test verifies that Gamble works correctly for various odd ratios
+        // Testing common Magic: The Gathering scenarios (cards in hand scenarios)
+        
+        const int sampleSize = 1000;
+        
+        var testCases = new[]
+        {
+            (odds: 1.0 / 3.0, label: "1/3", tolerance: 0.05),  // 33.3%
+            (odds: 2.0 / 3.0, label: "2/3", tolerance: 0.05),  // 66.7%
+            (odds: 3.0 / 7.0, label: "3/7", tolerance: 0.05),  // 42.9%
+            (odds: 6.0 / 7.0, label: "6/7", tolerance: 0.04),  // 85.7%
+            (odds: 4.0 / 7.0, label: "4/7", tolerance: 0.05)   // 57.1%
+        };
+
+        foreach (var (odds, label, tolerance) in testCases)
+        {
+            var successCount = 0;
+            
+            for (int i = 0; i < sampleSize; i++)
+            {
+                var hand = _service.GenerateHand(i + 3500 + (int)(odds * 1000), "TestDeck");
+                if (hand.LowestGambleOdds < odds)
+                {
+                    successCount++;
+                }
+            }
+
+            double successRate = (double)successCount / sampleSize;
+            double expectedRate = odds;
+            
+            Assert.InRange(successRate, expectedRate - tolerance, expectedRate + tolerance);
+        }
+    }
+
+    [Fact]
+    public void GenerateHand_LowestGambleOdds_UniformDistribution_Verification()
+    {
+        // Verify that the distribution is truly uniform by checking multiple ranges
+        
+        const int sampleSize = 10000;
+        var values = new List<float>();
+        
+        for (int i = 0; i < sampleSize; i++)
+        {
+            var hand = _service.GenerateHand(i + 5000, "TestDeck");
+            values.Add(hand.LowestGambleOdds);
+        }
+
+        // Check that values are distributed across the entire [0, 1] range
+        var below025 = values.Count(v => v < 0.25f);
+        var between025and050 = values.Count(v => v >= 0.25f && v < 0.50f);
+        var between050and075 = values.Count(v => v >= 0.50f && v < 0.75f);
+        var above075 = values.Count(v => v >= 0.75f);
+
+        // Each quartile should have approximately 25% of values (within 3%)
+        Assert.InRange(below025, 2200, 2800); // 25% of 10000 = 2500 ± 300
+        Assert.InRange(between025and050, 2200, 2800);
+        Assert.InRange(between050and075, 2200, 2800);
+        Assert.InRange(above075, 2200, 2800);
+
+        // Average should be close to 0.5 for uniform distribution
+        var average = values.Average();
+        Assert.InRange(average, 0.48, 0.52);
     }
 }
