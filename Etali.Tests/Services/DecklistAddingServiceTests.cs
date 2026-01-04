@@ -60,8 +60,6 @@ public class DecklistAddingServiceTests
     public async Task AddDecklist_WithEmptyDatabase_AssignsId1()
     {
         // This test verifies that the service correctly generates IDs
-        // We can't fully test AddDecklist without mocking HTTP calls,
-        // but we can verify the database interaction pattern
         
         // Arrange
         var service = new DecklistAddingService(_database, _mockLogger.Object, _mockConfig, _mockRateLimiter.Object);
@@ -77,8 +75,8 @@ public class DecklistAddingServiceTests
     public void AddDecklist_WithExistingDecklists_AssignsIncrementalId()
     {
         // Arrange
-        _database.Decklists.Add(new Decklist { Id = 1, Name = "Deck1", CardNames = new[] { "Card1" } });
-        _database.Decklists.Add(new Decklist { Id = 5, Name = "Deck5", CardNames = new[] { "Card5" } });
+        _database.Decklists.Add(new Decklist { Id = 1, Name = "Deck1", Cards = new[] { new Card { Name = "Card1", Type = "Creature" } } });
+        _database.Decklists.Add(new Decklist { Id = 5, Name = "Deck5", Cards = new[] { new Card { Name = "Card5", Type = "Artifact" } } });
         _database.SaveChanges();
 
         // Act - Simulate what AddDecklist does
@@ -91,21 +89,20 @@ public class DecklistAddingServiceTests
     [Fact]
     public async Task Database_CanStoreDecklistFromService()
     {
-        // This test verifies the database can store the format of data
-        // that DecklistAddingService would produce
+        // This test verifies the database can store the format of data that DecklistAddingService would produce
         
-        // Arrange - Simulate what AddDecklist would save
+        // Arrange
         var decklist = new Decklist
         {
             Id = 1,
             Name = "TestMoxfieldDeck",
-            CardNames = new[]
+            Cards = new[]
             {
-                "Sol Ring",
-                "Command Tower",
-                "Lightning Bolt",
-                "Counterspell",
-                "Path to Exile"
+                new Card { Name = "Sol Ring", Type = "Artifact" },
+                new Card { Name = "Command Tower", Type = "Land" },
+                new Card { Name = "Lightning Bolt", Type = "Instant" },
+                new Card { Name = "Counterspell", Type = "Instant" },
+                new Card { Name = "Path to Exile", Type = "Instant" }
             }
         };
 
@@ -116,8 +113,9 @@ public class DecklistAddingServiceTests
         // Assert
         var saved = await _database.Decklists.FirstOrDefaultAsync(d => d.Name == "TestMoxfieldDeck");
         Assert.NotNull(saved);
-        Assert.Equal(5, saved.CardNames.Length);
-        Assert.Contains("Sol Ring", saved.CardNames);
+        Assert.Equal(5, saved.Cards.Length);
+        var cardNames = saved.Cards.Select(c => c.Name).ToArray();
+        Assert.Contains("Sol Ring", cardNames);
     }
 
     [Fact]
@@ -126,12 +124,14 @@ public class DecklistAddingServiceTests
         // Test that the database can handle a full 99-card Commander deck
         
         // Arrange
-        var cardNames = Enumerable.Range(1, 99).Select(i => $"Card{i}").ToArray();
+        var cards = Enumerable.Range(1, 99)
+            .Select(i => new Card { Name = $"Card{i}", Type = "Creature" })
+            .ToArray();
         var decklist = new Decklist
         {
             Id = 1,
             Name = "Full99CardDeck",
-            CardNames = cardNames
+            Cards = cards
         };
 
         // Act
@@ -141,7 +141,7 @@ public class DecklistAddingServiceTests
         // Assert
         var saved = await _database.Decklists.FirstOrDefaultAsync(d => d.Name == "Full99CardDeck");
         Assert.NotNull(saved);
-        Assert.Equal(99, saved.CardNames.Length);
+        Assert.Equal(99, saved.Cards.Length);
     }
 
     [Fact]
@@ -154,16 +154,16 @@ public class DecklistAddingServiceTests
         {
             Id = 1,
             Name = "Special Chars Deck",
-            CardNames = new[]
+            Cards = new[]
             {
-                "Jace, the Mind Sculptor",
-                "Urza's Saga",
-                "Serra's Sanctum",
-                "Déjà Vu",
-                "_____ Goblin",
-                "Slaughter // Mayhem",
-                "Fire // Ice",
-                "Dead // Gone"
+                new Card { Name = "Jace, the Mind Sculptor", Type = "Planeswalker" },
+                new Card { Name = "Urza's Saga", Type = "Enchantment — Saga" },
+                new Card { Name = "Serra's Sanctum", Type = "Legendary Land" },
+                new Card { Name = "Déjà Vu", Type = "Sorcery" },
+                new Card { Name = "_____ Goblin", Type = "Creature" },
+                new Card { Name = "Slaughter // Mayhem", Type = "Instant // Sorcery" },
+                new Card { Name = "Fire // Ice", Type = "Instant // Instant" },
+                new Card { Name = "Dead // Gone", Type = "Instant // Instant" }
             }
         };
 
@@ -174,13 +174,14 @@ public class DecklistAddingServiceTests
         // Assert
         var saved = await _database.Decklists.FirstOrDefaultAsync(d => d.Name == "Special Chars Deck");
         Assert.NotNull(saved);
-        Assert.Contains("Jace, the Mind Sculptor", saved.CardNames);
-        Assert.Contains("Urza's Saga", saved.CardNames);
-        Assert.Contains("_____ Goblin", saved.CardNames);
-        Assert.Contains("Slaughter // Mayhem", saved.CardNames);
-        Assert.Contains("Fire // Ice", saved.CardNames);
-        Assert.Contains("Dead // Gone", saved.CardNames);
-        Assert.Equal(8, saved.CardNames.Length);
+        var cardNames = saved.Cards.Select(c => c.Name).ToArray();
+        Assert.Contains("Jace, the Mind Sculptor", cardNames);
+        Assert.Contains("Urza's Saga", cardNames);
+        Assert.Contains("_____ Goblin", cardNames);
+        Assert.Contains("Slaughter // Mayhem", cardNames);
+        Assert.Contains("Fire // Ice", cardNames);
+        Assert.Contains("Dead // Gone", cardNames);
+        Assert.Equal(8, saved.Cards.Length);
     }
 
     [Fact]
@@ -201,10 +202,15 @@ public class DecklistAddingServiceTests
         // Test that multiple decklists can have the same cards
         
         // Arrange
-        var sharedCards = new[] { "Sol Ring", "Command Tower", "Lightning Bolt" };
+        var sharedCards = new[]
+        {
+            new Card { Name = "Sol Ring", Type = "Artifact" },
+            new Card { Name = "Command Tower", Type = "Land" },
+            new Card { Name = "Lightning Bolt", Type = "Instant" }
+        };
         
-        var deck1 = new Decklist { Id = 1, Name = "Deck1", CardNames = sharedCards };
-        var deck2 = new Decklist { Id = 2, Name = "Deck2", CardNames = sharedCards };
+        var deck1 = new Decklist { Id = 1, Name = "Deck1", Cards = sharedCards };
+        var deck2 = new Decklist { Id = 2, Name = "Deck2", Cards = sharedCards };
 
         // Act
         _database.Decklists.Add(deck1);
@@ -214,7 +220,7 @@ public class DecklistAddingServiceTests
         // Assert
         Assert.Equal(2, _database.Decklists.Count());
         var allDecklists = await _database.Decklists.ToListAsync();
-        Assert.All(allDecklists, d => Assert.Equal(3, d.CardNames.Length));
+        Assert.All(allDecklists, d => Assert.Equal(3, d.Cards.Length));
     }
 
     [Fact]
@@ -223,12 +229,19 @@ public class DecklistAddingServiceTests
         // Verify that card order is maintained
         
         // Arrange
-        var orderedCards = new[] { "Card A", "Card B", "Card C", "Card D", "Card E" };
+        var orderedCards = new[]
+        {
+            new Card { Name = "Card A", Type = "Creature" },
+            new Card { Name = "Card B", Type = "Instant" },
+            new Card { Name = "Card C", Type = "Sorcery" },
+            new Card { Name = "Card D", Type = "Artifact" },
+            new Card { Name = "Card E", Type = "Land" }
+        };
         var decklist = new Decklist
         {
             Id = 1,
             Name = "OrderedDeck",
-            CardNames = orderedCards
+            Cards = orderedCards
         };
 
         // Act
@@ -238,7 +251,9 @@ public class DecklistAddingServiceTests
         // Assert
         var saved = await _database.Decklists.FirstOrDefaultAsync(d => d.Name == "OrderedDeck");
         Assert.NotNull(saved);
-        Assert.Equal(orderedCards, saved.CardNames);
+        var savedCardNames = saved.Cards.Select(c => c.Name).ToArray();
+        var expectedCardNames = orderedCards.Select(c => c.Name).ToArray();
+        Assert.Equal(expectedCardNames, savedCardNames);
     }
 
     [Fact]
@@ -251,17 +266,17 @@ public class DecklistAddingServiceTests
         {
             Id = 1,
             Name = "Complex Cards Deck",
-            CardNames = new[]
+            Cards = new[]
             {
-                "Teferi, Hero of Dominaria",
-                "Oko, Thief of Crowns",
-                "Nicol Bolas, Dragon-God",
-                "Wear // Tear",
-                "Turn // Burn",
-                "Catch // Release",
-                "Who // What // When // Where // Why",
-                "Odds // Ends",
-                "Search the City"
+                new Card { Name = "Teferi, Hero of Dominaria", Type = "Legendary Planeswalker" },
+                new Card { Name = "Oko, Thief of Crowns", Type = "Legendary Planeswalker" },
+                new Card { Name = "Nicol Bolas, Dragon-God", Type = "Legendary Planeswalker" },
+                new Card { Name = "Wear // Tear", Type = "Instant // Instant" },
+                new Card { Name = "Turn // Burn", Type = "Instant // Sorcery" },
+                new Card { Name = "Catch // Release", Type = "Instant // Sorcery" },
+                new Card { Name = "Who // What // When // Where // Why", Type = "Instant" },
+                new Card { Name = "Odds // Ends", Type = "Instant // Sorcery" },
+                new Card { Name = "Search the City", Type = "Enchantment" }
             }
         };
 
@@ -272,24 +287,25 @@ public class DecklistAddingServiceTests
         // Assert
         var saved = await _database.Decklists.FirstOrDefaultAsync(d => d.Name == "Complex Cards Deck");
         Assert.NotNull(saved);
+        var cardNames = saved.Cards.Select(c => c.Name).ToArray();
         
         // Verify all cards with commas
-        Assert.Contains("Teferi, Hero of Dominaria", saved.CardNames);
-        Assert.Contains("Oko, Thief of Crowns", saved.CardNames);
-        Assert.Contains("Nicol Bolas, Dragon-God", saved.CardNames);
+        Assert.Contains("Teferi, Hero of Dominaria", cardNames);
+        Assert.Contains("Oko, Thief of Crowns", cardNames);
+        Assert.Contains("Nicol Bolas, Dragon-God", cardNames);
         
         // Verify all split cards with //
-        Assert.Contains("Wear // Tear", saved.CardNames);
-        Assert.Contains("Turn // Burn", saved.CardNames);
-        Assert.Contains("Catch // Release", saved.CardNames);
-        Assert.Contains("Who // What // When // Where // Why", saved.CardNames);
-        Assert.Contains("Odds // Ends", saved.CardNames);
+        Assert.Contains("Wear // Tear", cardNames);
+        Assert.Contains("Turn // Burn", cardNames);
+        Assert.Contains("Catch // Release", cardNames);
+        Assert.Contains("Who // What // When // Where // Why", cardNames);
+        Assert.Contains("Odds // Ends", cardNames);
         
         // Verify total count
-        Assert.Equal(9, saved.CardNames.Length);
+        Assert.Equal(9, saved.Cards.Length);
         
         // Verify no corruption or splitting occurred
-        var distinctCards = saved.CardNames.Distinct().ToArray();
-        Assert.Equal(saved.CardNames.Length, distinctCards.Length);
+        var distinctCards = cardNames.Distinct().ToArray();
+        Assert.Equal(saved.Cards.Length, distinctCards.Length);
     }
 }

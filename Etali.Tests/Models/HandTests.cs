@@ -9,7 +9,7 @@ public class HandTests
     public void Hand_Constructor_SetsAllProperties()
     {
         // Arrange
-        var cards = new[] { "Card1", "Card2", "Card3", "Card4", "Card5", "Card6", "Card7" };
+        var cards = CreateTestCards(7);
         var stickers = new[] { 6, 5, 4 };
 
         // Act
@@ -29,7 +29,7 @@ public class HandTests
     public void Hand_RecordEquality_WorksCorrectly()
     {
         // Arrange
-        var cards = new[] { "Card1", "Card2", "Card3", "Card4", "Card5", "Card6", "Card7" };
+        var cards = CreateTestCards(7);
         var stickers = new[] { 6, 5, 4 };
         var hand1 = new Hand(1, cards, 2, stickers, 10, "TestDeck", 0.5f);
         var hand2 = new Hand(1, cards, 2, stickers, 10, "TestDeck", 0.5f);
@@ -44,7 +44,7 @@ public class HandTests
     public void Hand_CanBeDeconstructed()
     {
         // Arrange
-        var cards = new[] { "Card1", "Card2", "Card3", "Card4", "Card5", "Card6", "Card7" };
+        var cards = CreateTestCards(7);
         var stickers = new[] { 6, 5, 4 };
         var hand = new Hand(1, cards, 2, stickers, 10, "TestDeck", 0.8f);
 
@@ -59,5 +59,15 @@ public class HandTests
         Assert.Equal(10, decklistId);
         Assert.Equal("TestDeck", decklistName);
         Assert.Equal(0.8f, lowestGambleOdds);
+    }
+
+    private Card[] CreateTestCards(int count)
+    {
+        var cards = new Card[count];
+        for (int i = 0; i < count; i++)
+        {
+            cards[i] = new Card { Name = $"Card{i + 1}", Type = "Creature" };
+        }
+        return cards;
     }
 }

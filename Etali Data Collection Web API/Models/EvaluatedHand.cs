@@ -7,7 +7,7 @@ namespace Etali_Data_Collection_Web_API.Models;
 /// This model captures the user's analysis of whether a given hand can cast Etali and how many cards are needed.
 /// </summary>
 /// <param name="Id">Unique identifier matching the original generated hand.</param>
-/// <param name="Cards">Array of exactly 7 card names in the evaluated hand.</param>
+/// <param name="Cards">Array of exactly 7 cards in the evaluated hand.</param>
 /// <param name="SeatOrder">The player's seat position in the game (1-4).</param>
 /// <param name="Stickers">Array of exactly 3 sticker values that were applied to Etali.</param>
 /// <param name="CanCastEtali">Indicates whether Etali can be cast with this hand. If false, MinimumCardsToCastEtali must be 8.</param>
@@ -23,7 +23,11 @@ namespace Etali_Data_Collection_Web_API.Models;
 /// <example>
 /// {
 ///   "id": 1,
-///   "cards": ["Sol Ring", "Mana Vault", "Ancient Tomb", "Chrome Mox", "Simian Spirit Guide", "Jeweled Lotus", "Mox Diamond"],
+///   "cards": [
+///     { "name": "Sol Ring", "type": "Artifact" },
+///     { "name": "Mana Vault", "type": "Artifact" },
+///     { "name": "Ancient Tomb", "type": "Land" }
+///   ],
 ///   "seatOrder": 2,
 ///   "stickers": [6, 5, 4],
 ///   "canCastEtali": true,
@@ -37,8 +41,8 @@ public record EvaluatedHand(
     [property: Description("Unique identifier matching the original hand")]
     int Id,
     
-    [property: Description("Array of 7 card names in the opening hand")]
-    string[] Cards,
+    [property: Description("Array of 7 cards in the opening hand")]
+    Card[] Cards,
     
     [property: Description("Player's seat position (1-4)")]
     int SeatOrder,

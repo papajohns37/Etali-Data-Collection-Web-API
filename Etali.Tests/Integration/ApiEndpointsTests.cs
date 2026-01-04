@@ -107,8 +107,9 @@ public class ApiEndpointsTests : IClassFixture<CustomWebApplicationFactory>
         }
 
         // Assert - At least two hands should have different card selections or seat orders
+        var firstHandCardNames = string.Join(",", hands[0].Cards.Select(c => c.Name));
         var allIdentical = hands.All(h => 
-            string.Join(",", h.Cards) == string.Join(",", hands[0].Cards) &&
+            string.Join(",", h.Cards.Select(c => c.Name)) == firstHandCardNames &&
             h.SeatOrder == hands[0].SeatOrder);
         
         Assert.False(allIdentical, "Multiple hands should produce varied results");
@@ -128,8 +129,8 @@ public class ApiEndpointsTests : IClassFixture<CustomWebApplicationFactory>
         }
 
         // Assert - Should have variety in cards (not all hands identical)
-        var firstHandCards = string.Join(",", hands[0].Cards);
-        var allIdentical = hands.All(h => string.Join(",", h.Cards) == firstHandCards);
+        var firstHandCards = string.Join(",", hands[0].Cards.Select(c => c.Name));
+        var allIdentical = hands.All(h => string.Join(",", h.Cards.Select(c => c.Name)) == firstHandCards);
         Assert.False(allIdentical, "All hands should not have identical card selections");
 
         // Assert - Should have variety in seat orders
@@ -148,7 +149,7 @@ public class ApiEndpointsTests : IClassFixture<CustomWebApplicationFactory>
         var uniqueId = Random.Shared.Next(10000, 99999);
         var evaluation = new EvaluatedHand(
             uniqueId,
-            new[] { "Card1", "Card2", "Card3", "Card4", "Card5", "Card6", "Card7" },
+            CustomWebApplicationFactory.CreateTestCards("Card1", "Card2", "Card3", "Card4", "Card5", "Card6", "Card7"),
             2,
             new[] { 6, 5, 4 },
             true,
@@ -329,13 +330,13 @@ public class ApiEndpointsTests : IClassFixture<CustomWebApplicationFactory>
     {
         // Arrange - Very long card names
         var uniqueId = Random.Shared.Next(10000, 99999);
-        var longCards = Enumerable.Range(1, 7)
+        var longCardNames = Enumerable.Range(1, 7)
             .Select(i => new string('A', 100) + $" Card {i}")
             .ToArray();
 
         var evaluation = new EvaluatedHand(
             uniqueId,
-            longCards,
+            CustomWebApplicationFactory.CreateTestCards(longCardNames),
             2,
             new[] { 6, 5, 4 },
             true,
@@ -359,7 +360,7 @@ public class ApiEndpointsTests : IClassFixture<CustomWebApplicationFactory>
         var uniqueId = Random.Shared.Next(10000, 99999);
         var evaluation = new EvaluatedHand(
             uniqueId,
-            new[] { "Card1", "Card2", "Card3", "Card4", "Card5", "Card6", "Card7" },
+            CustomWebApplicationFactory.CreateTestCards("Card1", "Card2", "Card3", "Card4", "Card5", "Card6", "Card7"),
             1,
             new[] { 6, 5, 4 },
             false,
@@ -383,7 +384,7 @@ public class ApiEndpointsTests : IClassFixture<CustomWebApplicationFactory>
         var uniqueId = Random.Shared.Next(10000, 99999);
         var evaluation = new EvaluatedHand(
             uniqueId,
-            new[] { "Card1", "Card2", "Card3", "Card4", "Card5", "Card6", "Card7" },
+            CustomWebApplicationFactory.CreateTestCards("Card1", "Card2", "Card3", "Card4", "Card5", "Card6", "Card7"),
             2,
             new[] { 6, 5, 4 },
             true,
@@ -735,7 +736,7 @@ public class ApiEndpointsTests : IClassFixture<CustomWebApplicationFactory>
         var decklistName = "Moxfield Integration Test Deck";
         
         // Known cards that should be in this decklist
-        var expectedCards = new[] { "Treasonous Ogre", "Orcish Lumberjack", "Mana Vault", "Ancient Tomb" };
+        var expectedCardNames = new[] { "Treasonous Ogre", "Orcish Lumberjack", "Mana Vault", "Ancient Tomb" };
         
         var beforeAdd = DateTime.UtcNow.AddSeconds(-1);
 
@@ -749,17 +750,18 @@ public class ApiEndpointsTests : IClassFixture<CustomWebApplicationFactory>
         Assert.NotNull(savedDecklist);
         
         // Verify 99 cards 
-        Assert.Equal(99, savedDecklist.CardNames.Length);
+        Assert.Equal(99, savedDecklist.Cards.Length);
         
         // Verify known cards are present in the mainboard
-        foreach (var expectedCard in expectedCards)
+        var cardNames = savedDecklist.Cards.Select(c => c.Name).ToArray();
+        foreach (var expectedCardName in expectedCardNames)
         {
-            Assert.Contains(expectedCard, savedDecklist.CardNames);
+            Assert.Contains(expectedCardName, cardNames);
         }
         
         // Verify no duplicate cards
-        var distinctCards = savedDecklist.CardNames.Distinct().ToArray();
-        Assert.Equal(savedDecklist.CardNames.Length, distinctCards.Length);
+        var distinctCards = savedDecklist.Cards.Select(c => c.Name).Distinct().ToArray();
+        Assert.Equal(savedDecklist.Cards.Length, distinctCards.Length);
         
         // Verify the decklist was assigned a valid ID
         Assert.True(savedDecklist.Id > 0);
@@ -774,6 +776,15 @@ public class ApiEndpointsTests : IClassFixture<CustomWebApplicationFactory>
         Assert.NotEqual(default(DateTime), savedDecklist.CreatedAt);
         Assert.InRange(savedDecklist.CreatedAt, beforeAdd, afterAdd);
         Assert.Equal(DateTimeKind.Utc, savedDecklist.CreatedAt.Kind);
+        
+        // Verify cards have types populated
+        Assert.All(savedDecklist.Cards, card =>
+        {
+            Assert.NotNull(card.Name);
+            Assert.NotNull(card.Type);
+            Assert.NotEmpty(card.Name);
+            Assert.NotEmpty(card.Type);
+        });
     }
 
     #endregion
@@ -818,10 +829,18 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
                     {
                         Id = 1,
                         Name = "TestDeck",
-                        CardNames = new[]
+                        Cards = new[]
                         {
-                            "Card1", "Card2", "Card3", "Card4", "Card5",
-                            "Card6", "Card7", "Card8", "Card9", "Card10"
+                            new Card { Name = "Card1", Type = "Creature" },
+                            new Card { Name = "Card2", Type = "Instant" },
+                            new Card { Name = "Card3", Type = "Sorcery" },
+                            new Card { Name = "Card4", Type = "Artifact" },
+                            new Card { Name = "Card5", Type = "Enchantment" },
+                            new Card { Name = "Card6", Type = "Land" },
+                            new Card { Name = "Card7", Type = "Planeswalker" },
+                            new Card { Name = "Card8", Type = "Creature" },
+                            new Card { Name = "Card9", Type = "Instant" },
+                            new Card { Name = "Card10", Type = "Land" }
                         },
                         MoxfieldUrl = "https://www.moxfield.com/decks/test123",
                         MoxfieldId = "test123",
@@ -832,5 +851,13 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
                 }
             }
         });
+    }
+    
+    /// <summary>
+    /// Helper method to create test Card arrays for tests that need to create EvaluatedHand objects.
+    /// </summary>
+    public static Card[] CreateTestCards(params string[] names)
+    {
+        return names.Select(name => new Card { Name = name, Type = "Creature" }).ToArray();
     }
 }

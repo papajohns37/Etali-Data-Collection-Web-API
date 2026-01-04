@@ -13,36 +13,41 @@ public class DecklistTests
         {
             Id = 1,
             Name = "TestDeck",
-            CardNames = new[] { "Card1", "Card2", "Card3" }
+            Cards = new[]
+            {
+                new Card { Name = "Card1", Type = "Creature" },
+                new Card { Name = "Card2", Type = "Instant" },
+                new Card { Name = "Card3", Type = "Land" }
+            }
         };
 
         // Assert
         Assert.Equal(1, decklist.Id);
         Assert.Equal("TestDeck", decklist.Name);
-        Assert.Equal(3, decklist.CardNames.Length);
+        Assert.Equal(3, decklist.Cards.Length);
         Assert.NotEqual(default(DateTime), decklist.CreatedAt);
     }
 
     [Fact]
-    public void Decklist_CardNames_CanBeEmpty()
+    public void Decklist_Cards_CanBeEmpty()
     {
         // Arrange & Act
         var decklist = new Decklist
         {
             Id = 1,
             Name = "EmptyDeck",
-            CardNames = Array.Empty<string>()
+            Cards = Array.Empty<Card>()
         };
 
         // Assert
-        Assert.Empty(decklist.CardNames);
+        Assert.Empty(decklist.Cards);
     }
 
     [Fact]
     public void Decklist_Name_CanBeSet()
     {
         // Arrange
-        var decklist = new Decklist { Id = 1, Name = "Original", CardNames = Array.Empty<string>() };
+        var decklist = new Decklist { Id = 1, Name = "Original", Cards = Array.Empty<Card>() };
 
         // Act
         decklist.Name = "Updated";
@@ -52,22 +57,31 @@ public class DecklistTests
     }
 
     [Fact]
-    public void Decklist_CardNames_CanBeUpdated()
+    public void Decklist_Cards_CanBeUpdated()
     {
         // Arrange
         var decklist = new Decklist
         {
             Id = 1,
             Name = "TestDeck",
-            CardNames = new[] { "Card1", "Card2" }
+            Cards = new[]
+            {
+                new Card { Name = "Card1", Type = "Creature" },
+                new Card { Name = "Card2", Type = "Instant" }
+            }
         };
 
         // Act
-        decklist.CardNames = new[] { "CardA", "CardB", "CardC" };
+        decklist.Cards = new[]
+        {
+            new Card { Name = "CardA", Type = "Artifact" },
+            new Card { Name = "CardB", Type = "Enchantment" },
+            new Card { Name = "CardC", Type = "Land" }
+        };
 
         // Assert
-        Assert.Equal(3, decklist.CardNames.Length);
-        Assert.Contains("CardA", decklist.CardNames);
+        Assert.Equal(3, decklist.Cards.Length);
+        Assert.Contains(decklist.Cards, c => c.Name == "CardA");
     }
 
     [Fact]
@@ -78,7 +92,7 @@ public class DecklistTests
         {
             Id = 1,
             Name = "TestDeck",
-            CardNames = new[] { "Card1" },
+            Cards = new[] { new Card { Name = "Card1", Type = "Creature" } },
             MoxfieldUrl = "https://www.moxfield.com/decks/abc123"
         };
 
@@ -94,7 +108,7 @@ public class DecklistTests
         {
             Id = 1,
             Name = "TestDeck",
-            CardNames = new[] { "Card1" },
+            Cards = new[] { new Card { Name = "Card1", Type = "Creature" } },
             MoxfieldId = "abc123xyz"
         };
 
@@ -110,7 +124,7 @@ public class DecklistTests
         {
             Id = 1,
             Name = "TestDeck",
-            CardNames = new[] { "Card1" },
+            Cards = new[] { new Card { Name = "Card1", Type = "Creature" } },
             MoxfieldUrl = null,
             MoxfieldId = null
         };
@@ -131,7 +145,7 @@ public class DecklistTests
         {
             Id = 1,
             Name = "TestDeck",
-            CardNames = new[] { "Card1" }
+            Cards = new[] { new Card { Name = "Card1", Type = "Creature" } }
         };
 
         var afterCreate = DateTime.UtcNow.AddSeconds(1);
@@ -152,7 +166,7 @@ public class DecklistTests
         {
             Id = 1,
             Name = "TestDeck",
-            CardNames = new[] { "Card1" },
+            Cards = new[] { new Card { Name = "Card1", Type = "Creature" } },
             CreatedAt = specificTime
         };
 
@@ -171,7 +185,12 @@ public class DecklistTests
         {
             Id = 42,
             Name = "Complete Deck",
-            CardNames = new[] { "Sol Ring", "Mana Vault", "Chrome Mox" },
+            Cards = new[]
+            {
+                new Card { Name = "Sol Ring", Type = "Artifact" },
+                new Card { Name = "Mana Vault", Type = "Artifact" },
+                new Card { Name = "Chrome Mox", Type = "Artifact" }
+            },
             MoxfieldUrl = "https://www.moxfield.com/decks/xyz789",
             MoxfieldId = "xyz789",
             CreatedAt = createdTime
@@ -180,7 +199,7 @@ public class DecklistTests
         // Assert
         Assert.Equal(42, decklist.Id);
         Assert.Equal("Complete Deck", decklist.Name);
-        Assert.Equal(3, decklist.CardNames.Length);
+        Assert.Equal(3, decklist.Cards.Length);
         Assert.Equal("https://www.moxfield.com/decks/xyz789", decklist.MoxfieldUrl);
         Assert.Equal("xyz789", decklist.MoxfieldId);
         Assert.Equal(createdTime, decklist.CreatedAt);

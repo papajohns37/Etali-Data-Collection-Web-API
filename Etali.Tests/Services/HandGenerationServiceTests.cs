@@ -27,10 +27,18 @@ public class HandGenerationServiceTests
         {
             Id = 1,
             Name = "TestDeck",
-            CardNames = new[]
+            Cards = new[]
             {
-                "Card1", "Card2", "Card3", "Card4", "Card5",
-                "Card6", "Card7", "Card8", "Card9", "Card10"
+                new Card { Name = "Card1", Type = "Creature" },
+                new Card { Name = "Card2", Type = "Instant" },
+                new Card { Name = "Card3", Type = "Sorcery" },
+                new Card { Name = "Card4", Type = "Artifact" },
+                new Card { Name = "Card5", Type = "Enchantment" },
+                new Card { Name = "Card6", Type = "Land" },
+                new Card { Name = "Card7", Type = "Planeswalker" },
+                new Card { Name = "Card8", Type = "Creature" },
+                new Card { Name = "Card9", Type = "Instant" },
+                new Card { Name = "Card10", Type = "Land" }
             }
         });
         
@@ -38,10 +46,18 @@ public class HandGenerationServiceTests
         {
             Id = 2,
             Name = "SecondDeck",
-            CardNames = new[]
+            Cards = new[]
             {
-                "CardA", "CardB", "CardC", "CardD", "CardE",
-                "CardF", "CardG", "CardH", "CardI", "CardJ"
+                new Card { Name = "CardA", Type = "Creature" },
+                new Card { Name = "CardB", Type = "Instant" },
+                new Card { Name = "CardC", Type = "Sorcery" },
+                new Card { Name = "CardD", Type = "Artifact" },
+                new Card { Name = "CardE", Type = "Enchantment" },
+                new Card { Name = "CardF", Type = "Land" },
+                new Card { Name = "CardG", Type = "Planeswalker" },
+                new Card { Name = "CardH", Type = "Creature" },
+                new Card { Name = "CardI", Type = "Instant" },
+                new Card { Name = "CardJ", Type = "Land" }
             }
         });
         
@@ -146,7 +162,12 @@ public class HandGenerationServiceTests
         {
             Id = 3,
             Name = "SmallDeck",
-            CardNames = new[] { "Card1", "Card2", "Card3" }
+            Cards = new[] 
+            { 
+                new Card { Name = "Card1", Type = "Creature" },
+                new Card { Name = "Card2", Type = "Instant" },
+                new Card { Name = "Card3", Type = "Land" }
+            }
         });
         _database.SaveChanges();
 
@@ -199,13 +220,15 @@ public class HandGenerationServiceTests
     public void GenerateHand_AllCardsAreFromSpecifiedDecklist()
     {
         // Arrange
-        var expectedCards = _database.Decklists.First(d => d.Name == "TestDeck").CardNames;
+        var expectedCardNames = _database.Decklists.First(d => d.Name == "TestDeck")
+            .Cards.Select(c => c.Name).ToArray();
 
         // Act
         var hand = _service.GenerateHand(1, "TestDeck");
 
         // Assert - All cards in hand should be from the specified decklist
-        Assert.All(hand.Cards, card => Assert.Contains(card, expectedCards));
+        var handCardNames = hand.Cards.Select(c => c.Name).ToArray();
+        Assert.All(handCardNames, cardName => Assert.Contains(cardName, expectedCardNames));
     }
 
     [Fact]
@@ -218,26 +241,29 @@ public class HandGenerationServiceTests
         // Assert
         Assert.Equal(1, hand1.DecklistId);
         Assert.Equal("TestDeck", hand1.DecklistName);
-        Assert.All(hand1.Cards, card => Assert.StartsWith("Card", card));
+        Assert.All(hand1.Cards, card => Assert.StartsWith("Card", card.Name));
 
         Assert.Equal(2, hand2.DecklistId);
         Assert.Equal("SecondDeck", hand2.DecklistName);
-        Assert.All(hand2.Cards, card => Assert.StartsWith("Card", card));
+        Assert.All(hand2.Cards, card => Assert.StartsWith("Card", card.Name));
     }
 
     [Fact]
     public void GenerateHand_NeverSelectsCardsFromDifferentDecklist()
     {
         // Arrange
-        var testDeckCards = _database.Decklists.First(d => d.Name == "TestDeck").CardNames;
-        var secondDeckCards = _database.Decklists.First(d => d.Name == "SecondDeck").CardNames;
+        var testDeckCardNames = _database.Decklists.First(d => d.Name == "TestDeck")
+            .Cards.Select(c => c.Name).ToArray();
+        var secondDeckCardNames = _database.Decklists.First(d => d.Name == "SecondDeck")
+            .Cards.Select(c => c.Name).ToArray();
 
         // Act
         var hand = _service.GenerateHand(1, "TestDeck");
 
         // Assert - Should only have cards from TestDeck, none from SecondDeck
-        Assert.All(hand.Cards, card => Assert.Contains(card, testDeckCards));
-        Assert.All(hand.Cards, card => Assert.DoesNotContain(card, secondDeckCards));
+        var handCardNames = hand.Cards.Select(c => c.Name).ToArray();
+        Assert.All(handCardNames, cardName => Assert.Contains(cardName, testDeckCardNames));
+        Assert.All(handCardNames, cardName => Assert.DoesNotContain(cardName, secondDeckCardNames));
     }
 
     [Fact]
@@ -248,7 +274,16 @@ public class HandGenerationServiceTests
         {
             Id = 4,
             Name = "MinimalDeck",
-            CardNames = new[] { "C1", "C2", "C3", "C4", "C5", "C6", "C7" }
+            Cards = new[]
+            {
+                new Card { Name = "C1", Type = "Creature" },
+                new Card { Name = "C2", Type = "Instant" },
+                new Card { Name = "C3", Type = "Sorcery" },
+                new Card { Name = "C4", Type = "Artifact" },
+                new Card { Name = "C5", Type = "Enchantment" },
+                new Card { Name = "C6", Type = "Land" },
+                new Card { Name = "C7", Type = "Planeswalker" }
+            }
         });
         _database.SaveChanges();
 
@@ -257,7 +292,8 @@ public class HandGenerationServiceTests
 
         // Assert
         Assert.Equal(7, hand.Cards.Length);
-        Assert.Equal(7, hand.Cards.Distinct().Count()); // All unique
+        var cardNames = hand.Cards.Select(c => c.Name).ToArray();
+        Assert.Equal(7, cardNames.Distinct().Count()); // All unique
     }
 
     [Fact]
@@ -297,12 +333,14 @@ public class HandGenerationServiceTests
     public void GenerateHand_WithLargeDeck_StillReturns7UniqueCards()
     {
         // Arrange - Large 99-card deck
-        var largeCardList = Enumerable.Range(1, 99).Select(i => $"Card{i}").ToArray();
+        var largeCardList = Enumerable.Range(1, 99)
+            .Select(i => new Card { Name = $"Card{i}", Type = "Creature" })
+            .ToArray();
         _database.Decklists.Add(new Decklist
         {
             Id = 5,
             Name = "LargeDeck",
-            CardNames = largeCardList
+            Cards = largeCardList
         });
         _database.SaveChanges();
 
@@ -311,8 +349,10 @@ public class HandGenerationServiceTests
 
         // Assert
         Assert.Equal(7, hand.Cards.Length);
-        Assert.Equal(7, hand.Cards.Distinct().Count());
-        Assert.All(hand.Cards, card => Assert.Contains(card, largeCardList));
+        var cardNames = hand.Cards.Select(c => c.Name).ToArray();
+        Assert.Equal(7, cardNames.Distinct().Count());
+        var largeCardNames = largeCardList.Select(c => c.Name).ToArray();
+        Assert.All(cardNames, cardName => Assert.Contains(cardName, largeCardNames));
     }
 
     [Fact]

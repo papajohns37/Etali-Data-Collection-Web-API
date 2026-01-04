@@ -7,7 +7,7 @@ namespace Etali_Data_Collection_Web_API.Models;
 /// This model is used when generating new hands for evaluation.
 /// </summary>
 /// <param name="Id">Unique identifier for this hand.</param>
-/// <param name="Cards">Array of exactly 7 card names drawn randomly from the decklist.</param>
+/// <param name="Cards">Array of exactly 7 cards drawn randomly from the decklist.</param>
 /// <param name="SeatOrder">The player's seat position in the game (1-4), representing turn order.</param>
 /// <param name="Stickers">Array of exactly 3 randomly selected sticker values from the available pool.</param>
 /// <param name="DecklistId">The database ID of the decklist this hand was generated from.</param>
@@ -16,7 +16,11 @@ namespace Etali_Data_Collection_Web_API.Models;
 /// <example>
 /// {
 ///   "id": 1,
-///   "cards": ["Sol Ring", "Mana Vault", "Ancient Tomb", "Chrome Mox", "Simian Spirit Guide", "Jeweled Lotus", "Mox Diamond"],
+///   "cards": [
+///     { "name": "Sol Ring", "type": "Artifact" },
+///     { "name": "Mana Vault", "type": "Artifact" },
+///     { "name": "Ancient Tomb", "type": "Land" }
+///   ],
 ///   "seatOrder": 2,
 ///   "stickers": [6, 5, 4],
 ///   "decklistId": 1,
@@ -28,8 +32,8 @@ public record Hand(
     [property: Description("Unique identifier for this hand")]
     int Id,
     
-    [property: Description("Array of 7 card names in the opening hand")]
-    string[] Cards,
+    [property: Description("Array of 7 cards in the opening hand")]
+    Card[] Cards,
     
     [property: Description("Player's seat position (1-4), representing turn order")]
     int SeatOrder,

@@ -93,7 +93,7 @@ public class HandEvaluationServiceTests
         // Arrange
         var eval1 = new EvaluatedHand(
             1,
-            new[] { "Card1", "Card2", "Card3", "Card4", "Card5", "Card6", "Card7" },
+            CreateTestCards(7, "Card"),
             2,
             new[] { 6, 5, 4 },
             true,
@@ -104,7 +104,7 @@ public class HandEvaluationServiceTests
         );
         var eval2 = new EvaluatedHand(
             2,
-            new[] { "CardA", "CardB", "CardC", "CardD", "CardE", "CardF", "CardG" },
+            CreateTestCards(7, "CardA"),
             4,
             new[] { 4, 4, 3 },
             false,
@@ -136,9 +136,6 @@ public class HandEvaluationServiceTests
     [Fact]
     public async Task GetNextHandId_Sequential_GeneratesCorrectIds()
     {
-        // Note: DbContext is not thread-safe by design
-        // In production, each request gets its own scoped DbContext instance
-        
         // Arrange - Pre-populate some evaluations
         for (int i = 1; i <= 5; i++)
         {
@@ -163,8 +160,8 @@ public class HandEvaluationServiceTests
     public void RecordEvaluation_DuplicateId_ThrowsException()
     {
         // Arrange
-        var evaluation1 = new EvaluatedHand(1, new[] { "C1", "C2", "C3", "C4", "C5", "C6", "C7" }, 1, new[] { 6, 5, 4 }, true, 3, 1, "Deck1", 0.0f);
-        var evaluation2 = new EvaluatedHand(1, new[] { "D1", "D2", "D3", "D4", "D5", "D6", "D7" }, 2, new[] { 5, 4, 3 }, false, 8, 1, "Deck1", 0.0f);
+        var evaluation1 = new EvaluatedHand(1, CreateTestCards(7, "C"), 1, new[] { 6, 5, 4 }, true, 3, 1, "Deck1", 0.0f);
+        var evaluation2 = new EvaluatedHand(1, CreateTestCards(7, "D"), 2, new[] { 5, 4, 3 }, false, 8, 1, "Deck1", 0.0f);
 
         // Act
         _service.RecordEvaluation(evaluation1);
@@ -181,7 +178,7 @@ public class HandEvaluationServiceTests
         // Arrange
         var evaluation = new EvaluatedHand(
             1,
-            new[] { "Card1", "Card2", "Card3", "Card4", "Card5", "Card6", "Card7" },
+            CreateTestCards(7, "Card"),
             2,
             new[] { 6, 5, 4 },
             false,
@@ -209,7 +206,7 @@ public class HandEvaluationServiceTests
         {
             var evaluation = new EvaluatedHand(
                 minCards,
-                new[] { "Card1", "Card2", "Card3", "Card4", "Card5", "Card6", "Card7" },
+                CreateTestCards(7, "Card"),
                 1,
                 new[] { 6, 5, 4 },
                 true,
@@ -265,7 +262,16 @@ public class HandEvaluationServiceTests
     public void RecordEvaluation_PreservesAllFieldsAccurately()
     {
         // Arrange
-        var cards = new[] { "Sol Ring", "Mana Vault", "Ancient Tomb", "City of Traitors", "Lotus Petal", "Chrome Mox", "Mox Diamond" };
+        var cards = new[]
+        {
+            new Card { Name = "Sol Ring", Type = "Artifact" },
+            new Card { Name = "Mana Vault", Type = "Artifact" },
+            new Card { Name = "Ancient Tomb", Type = "Land" },
+            new Card { Name = "City of Traitors", Type = "Land" },
+            new Card { Name = "Lotus Petal", Type = "Artifact" },
+            new Card { Name = "Chrome Mox", Type = "Artifact" },
+            new Card { Name = "Mox Diamond", Type = "Artifact" }
+        };
         var stickers = new[] { 6, 5, 4 };
         var evaluation = new EvaluatedHand(999, cards, 3, stickers, true, 4, 10, "SpecialDeck", 0.85f);
 
@@ -275,7 +281,9 @@ public class HandEvaluationServiceTests
         // Assert
         var saved = _database.EvaluatedHands.FirstOrDefault(e => e.Id == 999);
         Assert.NotNull(saved);
-        Assert.Equal(cards, saved.Cards);
+        Assert.Equal(7, saved.Cards.Length);
+        Assert.Equal("Sol Ring", saved.Cards[0].Name);
+        Assert.Equal("Artifact", saved.Cards[0].Type);
         Assert.Equal(stickers, saved.Stickers);
         Assert.Equal(3, saved.SeatOrder);
         Assert.True(saved.CanCastEtali);
@@ -289,7 +297,7 @@ public class HandEvaluationServiceTests
     {
         return new EvaluatedHand(
             id,
-            new[] { "Card1", "Card2", "Card3", "Card4", "Card5", "Card6", "Card7" },
+            CreateTestCards(7, "Card"),
             1,
             new[] { 6, 5, 4 },
             true,
@@ -298,5 +306,15 @@ public class HandEvaluationServiceTests
             "TestDeck",
             0.0f
         );
+    }
+
+    private Card[] CreateTestCards(int count, string prefix = "Card")
+    {
+        var cards = new Card[count];
+        for (int i = 0; i < count; i++)
+        {
+            cards[i] = new Card { Name = $"{prefix}{i + 1}", Type = "Creature" };
+        }
+        return cards;
     }
 }

@@ -10,7 +10,11 @@ namespace Etali_Data_Collection_Web_API.Models
     /// {
     ///   "id": 1,
     ///   "name": "Fast Etali",
-    ///   "cardNames": ["Sol Ring", "Mana Vault", "Ancient Tomb", "Chrome Mox", ...],
+    ///   "cards": [
+    ///     { "name": "Sol Ring", "type": "Artifact" },
+    ///     { "name": "Mana Vault", "type": "Artifact" },
+    ///     { "name": "Ancient Tomb", "type": "Land" }
+    ///   ],
     ///   "moxfieldUrl": "https://www.moxfield.com/decks/abc123xyz",
     ///   "moxfieldId": "abc123xyz",
     ///   "createdAt": "2024-01-15T10:30:00Z"
@@ -31,14 +35,14 @@ namespace Etali_Data_Collection_Web_API.Models
         public string Name { get; set; } = string.Empty;
         
         /// <summary>
-        /// Array of all card names in the decklist.
+        /// Array of all cards in the decklist with their properties.
         /// Typically contains 99 cards for Commander format.
         /// </summary>
         /// <remarks>
-        /// Cards are stored as simple names. The decklist must contain at least 7 cards to generate a hand.
+        /// The decklist must contain at least 7 cards to generate a hand.
         /// </remarks>
-        [Description("Array of all card names in the decklist")]
-        public string[] CardNames { get; set; } = Array.Empty<string>();
+        [Description("Array of all cards in the decklist")]
+        public Card[] Cards { get; set; } = Array.Empty<Card>();
         
         /// <summary>
         /// The public URL to view this decklist on Moxfield.

@@ -38,7 +38,16 @@ public class StatisticsServiceTests
         {
             Id = 1,
             Name = "Test Deck",
-            CardNames = new[] { "Card1", "Card2", "Card3", "Card4", "Card5", "Card6", "Card7" }
+            Cards = new[]
+            {
+                new Card { Name = "Card1", Type = "Creature" },
+                new Card { Name = "Card2", Type = "Instant" },
+                new Card { Name = "Card3", Type = "Sorcery" },
+                new Card { Name = "Card4", Type = "Artifact" },
+                new Card { Name = "Card5", Type = "Enchantment" },
+                new Card { Name = "Card6", Type = "Land" },
+                new Card { Name = "Card7", Type = "Planeswalker" }
+            }
         });
         await _database.SaveChangesAsync();
 
@@ -58,7 +67,7 @@ public class StatisticsServiceTests
     public async Task GetDecklistStatistics_SingleHandSize7_CalculatesCorrectProbability()
     {
         // Arrange
-        _database.Decklists.Add(new Decklist { Id = 1, Name = "Test Deck", CardNames = new[] { "Card1", "Card2", "Card3", "Card4", "Card5", "Card6", "Card7" } });
+        _database.Decklists.Add(new Decklist { Id = 1, Name = "Test Deck", Cards = CreateTestCards(7) });
         
         // Add 10 hands: 7 successful (minimumCards <= 7), 3 unsuccessful
         for (int i = 1; i <= 7; i++)
@@ -91,7 +100,7 @@ public class StatisticsServiceTests
     public async Task GetDecklistStatistics_MultipleHandSizes_CountsCorrectly()
     {
         // Arrange
-        _database.Decklists.Add(new Decklist { Id = 1, Name = "Test Deck", CardNames = new[] { "Card1", "Card2", "Card3", "Card4", "Card5", "Card6", "Card7" } });
+        _database.Decklists.Add(new Decklist { Id = 1, Name = "Test Deck", Cards = CreateTestCards(7) });
         
         // Hand 1: Can cast with 3 cards (counts for 3, 4, 5, 6, 7)
         _database.EvaluatedHands.Add(CreateHand(1, 1, true, 3));
@@ -137,7 +146,7 @@ public class StatisticsServiceTests
     public async Task GetDecklistStatistics_ZeroSuccesses_ReturnsZeroProbability()
     {
         // Arrange
-        _database.Decklists.Add(new Decklist { Id = 1, Name = "Test Deck", CardNames = new[] { "Card1", "Card2", "Card3", "Card4", "Card5", "Card6", "Card7" } });
+        _database.Decklists.Add(new Decklist { Id = 1, Name = "Test Deck", Cards = CreateTestCards(7) });
         
         // Add hands that cannot cast at all
         for (int i = 1; i <= 5; i++)
@@ -162,7 +171,7 @@ public class StatisticsServiceTests
     public async Task GetDecklistStatistics_AllSuccesses_ReturnsOneProbability()
     {
         // Arrange
-        _database.Decklists.Add(new Decklist { Id = 1, Name = "Test Deck", CardNames = new[] { "Card1", "Card2", "Card3", "Card4", "Card5", "Card6", "Card7" } });
+        _database.Decklists.Add(new Decklist { Id = 1, Name = "Test Deck", Cards = CreateTestCards(7) });
         
         // Add hands that can all cast
         for (int i = 1; i <= 5; i++)
@@ -187,7 +196,7 @@ public class StatisticsServiceTests
     public async Task GetDecklistStatistics_ConfidenceIntervals_AreInValidRange()
     {
         // Arrange
-        _database.Decklists.Add(new Decklist { Id = 1, Name = "Test Deck", CardNames = new[] { "Card1", "Card2", "Card3", "Card4", "Card5", "Card6", "Card7" } });
+        _database.Decklists.Add(new Decklist { Id = 1, Name = "Test Deck", Cards = CreateTestCards(7) });
         
         for (int i = 1; i <= 20; i++)
         {
@@ -221,18 +230,9 @@ public class StatisticsServiceTests
     public async Task GetDecklistStatistics_OverallMulliganProbability_CalculatedCorrectly()
     {
         // Arrange
-        _database.Decklists.Add(new Decklist { Id = 1, Name = "Test Deck", CardNames = new[] { "Card1", "Card2", "Card3", "Card4", "Card5", "Card6", "Card7" } });
+        _database.Decklists.Add(new Decklist { Id = 1, Name = "Test Deck", Cards = CreateTestCards(7) });
         
         // Create hands with specific minimum cards to control probabilities
-        // We want p7=0.5, p6=0.4, p5=0.3, p4=0.2, p3=0.1
-        // With 10 hands total:
-        // - 1 hand with minCards=3 (success for 3,4,5,6,7)
-        // - 1 hand with minCards=4 (success for 4,5,6,7)
-        // - 1 hand with minCards=5 (success for 5,6,7)
-        // - 1 hand with minCards=6 (success for 6,7)
-        // - 1 hand with minCards=7 (success for 7)
-        // - 5 hands cannot cast (minCards=8)
-        
         _database.EvaluatedHands.Add(CreateHand(1, 1, true, 3));  // Counts for 3,4,5,6,7
         _database.EvaluatedHands.Add(CreateHand(2, 1, true, 4));  // Counts for 4,5,6,7
         _database.EvaluatedHands.Add(CreateHand(3, 1, true, 5));  // Counts for 5,6,7
@@ -251,7 +251,7 @@ public class StatisticsServiceTests
         // Assert
         Assert.NotNull(result);
         
-        // Verify probabilities: p7=5/10=0.5, p6=4/10=0.4, p5=3/10=0.3, p4=2/10=0.2, p3=1/10=0.1
+        // Verify probabilities
         var p7 = result.HandSizeStatistics.First(s => s.HandSize == 7).Probability;
         var p6 = result.HandSizeStatistics.First(s => s.HandSize == 6).Probability;
         var p5 = result.HandSizeStatistics.First(s => s.HandSize == 5).Probability;
@@ -276,7 +276,7 @@ public class StatisticsServiceTests
     public async Task GetDecklistStatistics_SmallSample_WilsonScoreGivesWiderCI()
     {
         // Arrange
-        _database.Decklists.Add(new Decklist { Id = 1, Name = "Test Deck", CardNames = new[] { "Card1", "Card2", "Card3", "Card4", "Card5", "Card6", "Card7" } });
+        _database.Decklists.Add(new Decklist { Id = 1, Name = "Test Deck", Cards = CreateTestCards(7) });
         
         // Small sample: 2 hands, 1 success = 50%
         _database.EvaluatedHands.Add(CreateHand(1, 1, true, 5));
@@ -300,7 +300,7 @@ public class StatisticsServiceTests
     public async Task GetDecklistStatistics_LargeSample_WilsonScoreGivesNarrowerCI()
     {
         // Arrange
-        _database.Decklists.Add(new Decklist { Id = 1, Name = "Test Deck", CardNames = new[] { "Card1", "Card2", "Card3", "Card4", "Card5", "Card6", "Card7" } });
+        _database.Decklists.Add(new Decklist { Id = 1, Name = "Test Deck", Cards = CreateTestCards(7) });
         
         // Large sample: 100 hands, 50 successes = 50%
         for (int i = 1; i <= 100; i++)
@@ -317,7 +317,7 @@ public class StatisticsServiceTests
         var size7 = result.HandSizeStatistics.First(s => s.HandSize == 7);
         Assert.Equal(0.5, size7.Probability, precision: 5);
         
-        // With 100 samples, CI should be narrow - adjust tolerance for Wilson score
+        // With 100 samples, CI should be narrow
         double ciWidth = size7.ConfidenceIntervalUpper - size7.ConfidenceIntervalLower;
         Assert.True(ciWidth < 0.17, $"CI width should be < 0.17 for large sample, was {ciWidth}");
     }
@@ -326,8 +326,8 @@ public class StatisticsServiceTests
     public async Task GetDecklistStatistics_MultipleDecks_IsolatesCorrectly()
     {
         // Arrange
-        _database.Decklists.Add(new Decklist { Id = 1, Name = "Deck 1", CardNames = new[] { "Card1", "Card2", "Card3", "Card4", "Card5", "Card6", "Card7" } });
-        _database.Decklists.Add(new Decklist { Id = 2, Name = "Deck 2", CardNames = new[] { "Card1", "Card2", "Card3", "Card4", "Card5", "Card6", "Card7" } });
+        _database.Decklists.Add(new Decklist { Id = 1, Name = "Deck 1", Cards = CreateTestCards(7) });
+        _database.Decklists.Add(new Decklist { Id = 2, Name = "Deck 2", Cards = CreateTestCards(7) });
         
         // Deck 1: 3 hands, all successful
         for (int i = 1; i <= 3; i++)
@@ -361,11 +361,18 @@ public class StatisticsServiceTests
         Assert.Equal(0.0, size7Deck2.Probability);
     }
 
+    private Card[] CreateTestCards(int count)
+    {
+        return Enumerable.Range(1, count)
+            .Select(i => new Card { Name = $"Card{i}", Type = "Creature" })
+            .ToArray();
+    }
+
     private EvaluatedHand CreateHand(int id, int decklistId, bool canCastEtali, int minimumCards)
     {
         return new EvaluatedHand(
             id,
-            new[] { "Card1", "Card2", "Card3", "Card4", "Card5", "Card6", "Card7" },
+            CreateTestCards(7),
             1,
             new[] { 6, 5, 4 },
             canCastEtali,

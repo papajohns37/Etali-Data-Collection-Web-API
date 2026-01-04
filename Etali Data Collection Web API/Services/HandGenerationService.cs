@@ -37,12 +37,12 @@ public class HandGenerationService : IHandGenerationService
             throw new InvalidOperationException($"Decklist '{decklistName}' not found.");
         }
 
-        if (decklist.CardNames.Length < 7)
+        if (decklist.Cards.Length < 7)
         {
             throw new InvalidOperationException($"Decklist '{decklistName}' has insufficient cards. At least 7 cards are required.");
         }
 
-        var selectedCards = SelectRandomCards(decklist.CardNames);
+        var selectedCards = SelectRandomCards(decklist.Cards);
         var seatOrder = GenerateSeatOrder();
         var stickers = GenerateStickers();
         var lowestGambleOdds = GenerateLowestGambleOdds();
@@ -53,11 +53,11 @@ public class HandGenerationService : IHandGenerationService
     /// <summary>
     /// Selects 7 random cards from the provided card list.
     /// </summary>
-    /// <param name="cardNames">The array of card names to select from.</param>
-    /// <returns>An array of 7 randomly selected card names.</returns>
-    private string[] SelectRandomCards(string[] cardNames)
+    /// <param name="cards">The array of cards to select from.</param>
+    /// <returns>An array of 7 randomly selected cards.</returns>
+    private Card[] SelectRandomCards(Card[] cards)
     {
-        return cardNames
+        return cards
             .OrderBy(_ => _random.Next())
             .Take(7)
             .ToArray();

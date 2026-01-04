@@ -22,7 +22,7 @@ namespace Etali_Data_Collection_Web_API
                 entity.Property(e => e.Cards)
                     .HasConversion(
                         v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
-                        v => JsonSerializer.Deserialize<string[]>(v, (JsonSerializerOptions?)null) ?? Array.Empty<string>());
+                        v => JsonSerializer.Deserialize<Card[]>(v, (JsonSerializerOptions?)null) ?? Array.Empty<Card>());
                 entity.Property(e => e.Stickers)
                     .HasConversion(
                         v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
@@ -33,10 +33,10 @@ namespace Etali_Data_Collection_Web_API
             modelBuilder.Entity<Decklist>(entity =>
             {
                 entity.HasKey(d => d.Id);
-                entity.Property(d => d.CardNames)
+                entity.Property(d => d.Cards)
                     .HasConversion(
                         v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
-                        v => JsonSerializer.Deserialize<string[]>(v, (JsonSerializerOptions?)null) ?? Array.Empty<string>());
+                        v => JsonSerializer.Deserialize<Card[]>(v, (JsonSerializerOptions?)null) ?? Array.Empty<Card>());
             });
         }
     }

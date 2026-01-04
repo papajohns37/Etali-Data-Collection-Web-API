@@ -35,8 +35,8 @@ namespace Etali_Data_Collection_Web_API.Services
         {
             string json = await GetDecklistAsync(link);
             
-            // Parse the JSON and extract mainboard card names
-            List<string> cardNames = ExtractMainboardCardNames(json);
+            // Parse the JSON and extract mainboard cards with their properties
+            List<Card> cards = ExtractMainboardCards(json);
             
             // Extract Moxfield metadata
             var (moxfieldUrl, moxfieldId) = ExtractMoxfieldMetadata(json);
@@ -50,19 +50,19 @@ namespace Etali_Data_Collection_Web_API.Services
             {
                 Id = nextId,
                 Name = name,
-                CardNames = cardNames.ToArray(),
+                Cards = cards.ToArray(),
                 MoxfieldUrl = moxfieldUrl,
                 MoxfieldId = moxfieldId,
                 CreatedAt = createdAt
             });
             
             await _database.SaveChangesAsync();
-            _logger.LogInformation($"Decklist '{name}' (Moxfield ID: {moxfieldId}) added with ID {nextId} containing {cardNames.Count} cards at {createdAt:yyyy-MM-dd HH:mm:ss} UTC");
+            _logger.LogInformation($"Decklist '{name}' (Moxfield ID: {moxfieldId}) added with ID {nextId} containing {cards.Count} cards at {createdAt:yyyy-MM-dd HH:mm:ss} UTC");
         }
 
-        private List<string> ExtractMainboardCardNames(string json)
+        private List<Card> ExtractMainboardCards(string json)
         {
-            var cardNames = new List<string>();
+            var cards = new List<Card>();
             
             using (JsonDocument document = JsonDocument.Parse(json))
             {
@@ -73,20 +73,36 @@ namespace Etali_Data_Collection_Web_API.Services
                 {
                     if (boards.TryGetProperty("mainboard", out var mainboard))
                     {
-                        if (mainboard.TryGetProperty("cards", out var cards))
+                        if (mainboard.TryGetProperty("cards", out var cardsProperty))
                         {
                             // Iterate through each card in the mainboard
-                            foreach (var cardProperty in cards.EnumerateObject())
+                            foreach (var cardProperty in cardsProperty.EnumerateObject())
                             {
                                 var cardData = cardProperty.Value;
                                 
-                                // Get the card name
+                                // Get the card information
                                 if (cardData.TryGetProperty("card", out var cardInfo))
                                 {
+                                    string name = string.Empty;
+                                    string type = string.Empty;
+                                    
+                                    // Extract card name
                                     if (cardInfo.TryGetProperty("name", out var cardName))
                                     {
-                                        cardNames.Add(cardName.GetString() ?? string.Empty);
+                                        name = cardName.GetString() ?? string.Empty;
                                     }
+                                    
+                                    // Extract card type
+                                    if (cardInfo.TryGetProperty("type", out var cardType))
+                                    {
+                                        type = cardType.GetString() ?? string.Empty;
+                                    }
+                                    
+                                    cards.Add(new Card
+                                    {
+                                        Name = name,
+                                        Type = type
+                                    });
                                 }
                             }
                         }
@@ -94,7 +110,7 @@ namespace Etali_Data_Collection_Web_API.Services
                 }
             }
             
-            return cardNames;
+            return cards;
         }
 
         private (string? moxfieldUrl, string? moxfieldId) ExtractMoxfieldMetadata(string json)
