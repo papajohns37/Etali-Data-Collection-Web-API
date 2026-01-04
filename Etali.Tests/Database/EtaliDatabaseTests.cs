@@ -18,7 +18,7 @@ public class EtaliDatabaseTests
         using var context = new EtaliDatabase(options);
         var evaluatedHand = new EvaluatedHand(
             1,
-            new[] { "Card1", "Card2", "Card3", "Card4", "Card5", "Card6", "Card7" },
+            CreateTestCards(7),
             2,
             new[] { 6, 5, 4 },
             true,
@@ -52,7 +52,12 @@ public class EtaliDatabaseTests
         {
             Id = 1,
             Name = "TestDeck",
-            CardNames = new[] { "Card1", "Card2", "Card3" }
+            Cards = new[]
+            {
+                new Card { Name = "Card1", Type = "Creature" },
+                new Card { Name = "Card2", Type = "Instant" },
+                new Card { Name = "Card3", Type = "Land" }
+            }
         };
 
         // Act
@@ -63,7 +68,7 @@ public class EtaliDatabaseTests
         var retrieved = context.Decklists.FirstOrDefault(d => d.Id == 1);
         Assert.NotNull(retrieved);
         Assert.Equal("TestDeck", retrieved.Name);
-        Assert.Equal(3, retrieved.CardNames.Length);
+        Assert.Equal(3, retrieved.Cards.Length);
     }
 
     [Fact]
@@ -79,7 +84,11 @@ public class EtaliDatabaseTests
         {
             Id = 1,
             Name = "TestDeck",
-            CardNames = new[] { "Card1", "Card2" }
+            Cards = new[]
+            {
+                new Card { Name = "Card1", Type = "Creature" },
+                new Card { Name = "Card2", Type = "Instant" }
+            }
         };
 
         // Act
@@ -107,7 +116,7 @@ public class EtaliDatabaseTests
         {
             context.EvaluatedHands.Add(new EvaluatedHand(
                 i,
-                new[] { "Card1", "Card2", "Card3", "Card4", "Card5", "Card6", "Card7" },
+                CreateTestCards(7),
                 i % 4 + 1,
                 new[] { 6, 5, 4 },
                 i % 2 == 0,
@@ -134,9 +143,9 @@ public class EtaliDatabaseTests
         using var context = new EtaliDatabase(options);
 
         // Act
-        context.Decklists.Add(new Decklist { Id = 1, Name = "Deck1", CardNames = new[] { "Card1" } });
-        context.Decklists.Add(new Decklist { Id = 2, Name = "Deck2", CardNames = new[] { "Card2" } });
-        context.Decklists.Add(new Decklist { Id = 3, Name = "Deck3", CardNames = new[] { "Card3" } });
+        context.Decklists.Add(new Decklist { Id = 1, Name = "Deck1", Cards = new[] { new Card { Name = "Card1", Type = "Creature" } } });
+        context.Decklists.Add(new Decklist { Id = 2, Name = "Deck2", Cards = new[] { new Card { Name = "Card2", Type = "Instant" } } });
+        context.Decklists.Add(new Decklist { Id = 3, Name = "Deck3", Cards = new[] { new Card { Name = "Card3", Type = "Land" } } });
         context.SaveChanges();
 
         // Assert
@@ -154,15 +163,15 @@ public class EtaliDatabaseTests
         using var context = new EtaliDatabase(options);
         
         // Cards with commas in names
-        var cardsWithCommas = new[] 
-        { 
-            "Jace, the Mind Sculptor",
-            "Teferi, Hero of Dominaria",
-            "Oko, Thief of Crowns",
-            "Uro, Titan of Nature's Wrath",
-            "Card5",
-            "Card6",
-            "Card7"
+        var cardsWithCommas = new[]
+        {
+            new Card { Name = "Jace, the Mind Sculptor", Type = "Planeswalker" },
+            new Card { Name = "Teferi, Hero of Dominaria", Type = "Legendary Planeswalker" },
+            new Card { Name = "Oko, Thief of Crowns", Type = "Legendary Planeswalker" },
+            new Card { Name = "Uro, Titan of Nature's Wrath", Type = "Legendary Creature" },
+            new Card { Name = "Card5", Type = "Creature" },
+            new Card { Name = "Card6", Type = "Instant" },
+            new Card { Name = "Card7", Type = "Land" }
         };
         
         var evaluatedHand = new EvaluatedHand(
@@ -186,8 +195,8 @@ public class EtaliDatabaseTests
         // Assert - Cards should be preserved exactly
         Assert.NotNull(retrieved);
         Assert.Equal(cardsWithCommas.Length, retrieved.Cards.Length);
-        Assert.Equal("Jace, the Mind Sculptor", retrieved.Cards[0]);
-        Assert.Equal("Teferi, Hero of Dominaria", retrieved.Cards[1]);
+        Assert.Equal("Jace, the Mind Sculptor", retrieved.Cards[0].Name);
+        Assert.Equal("Teferi, Hero of Dominaria", retrieved.Cards[1].Name);
     }
 
     [Fact]
@@ -202,20 +211,20 @@ public class EtaliDatabaseTests
         
         var specialCards = new[]
         {
-            "Urza's Saga",
-            "Serra's Sanctum",
-            "_____ Goblin",
-            "Déjà Vu",
-            "Card: The Gathering",
-            "Test//Card",
-            "Card (Ver. 2)"
+            new Card { Name = "Urza's Saga", Type = "Enchantment — Saga" },
+            new Card { Name = "Serra's Sanctum", Type = "Legendary Land" },
+            new Card { Name = "_____ Goblin", Type = "Creature" },
+            new Card { Name = "Déjà Vu", Type = "Sorcery" },
+            new Card { Name = "Card: The Gathering", Type = "Instant" },
+            new Card { Name = "Test//Card", Type = "Instant // Sorcery" },
+            new Card { Name = "Card (Ver. 2)", Type = "Artifact" }
         };
         
         var decklist = new Decklist
         {
             Id = 1,
             Name = "Special Characters Deck",
-            CardNames = specialCards
+            Cards = specialCards
         };
 
         // Act - Save and retrieve
@@ -226,10 +235,10 @@ public class EtaliDatabaseTests
 
         // Assert
         Assert.NotNull(retrieved);
-        Assert.Equal(specialCards.Length, retrieved.CardNames.Length);
-        Assert.Equal("Urza's Saga", retrieved.CardNames[0]);
-        Assert.Equal("_____ Goblin", retrieved.CardNames[2]);
-        Assert.Equal("Card: The Gathering", retrieved.CardNames[4]);
+        Assert.Equal(specialCards.Length, retrieved.Cards.Length);
+        Assert.Equal("Urza's Saga", retrieved.Cards[0].Name);
+        Assert.Equal("_____ Goblin", retrieved.Cards[2].Name);
+        Assert.Equal("Card: The Gathering", retrieved.Cards[4].Name);
     }
 
     [Fact]
@@ -243,7 +252,16 @@ public class EtaliDatabaseTests
         using var context = new EtaliDatabase(options);
         
         var longCardName = new string('A', 200); // 200 character card name
-        var cards = new[] { longCardName, "Card2", "Card3", "Card4", "Card5", "Card6", "Card7" };
+        var cards = new[]
+        {
+            new Card { Name = longCardName, Type = "Creature" },
+            new Card { Name = "Card2", Type = "Instant" },
+            new Card { Name = "Card3", Type = "Sorcery" },
+            new Card { Name = "Card4", Type = "Artifact" },
+            new Card { Name = "Card5", Type = "Enchantment" },
+            new Card { Name = "Card6", Type = "Land" },
+            new Card { Name = "Card7", Type = "Planeswalker" }
+        };
         
         var evaluatedHand = new EvaluatedHand(1, cards, 1, new[] { 6, 5, 4 }, true, 3, 1, "TestDeck", 0.0f);
 
@@ -255,8 +273,8 @@ public class EtaliDatabaseTests
 
         // Assert
         Assert.NotNull(retrieved);
-        Assert.Equal(longCardName, retrieved.Cards[0]);
-        Assert.Equal(200, retrieved.Cards[0].Length);
+        Assert.Equal(longCardName, retrieved.Cards[0].Name);
+        Assert.Equal(200, retrieved.Cards[0].Name.Length);
     }
 
     [Fact]
@@ -269,12 +287,14 @@ public class EtaliDatabaseTests
 
         using var context = new EtaliDatabase(options);
         
-        var cards = Enumerable.Range(1, 99).Select(i => $"Card Number {i}").ToArray();
+        var cards = Enumerable.Range(1, 99)
+            .Select(i => new Card { Name = $"Card Number {i}", Type = "Creature" })
+            .ToArray();
         var decklist = new Decklist
         {
             Id = 1,
             Name = "Full Commander Deck",
-            CardNames = cards
+            Cards = cards
         };
 
         // Act
@@ -285,9 +305,9 @@ public class EtaliDatabaseTests
 
         // Assert
         Assert.NotNull(retrieved);
-        Assert.Equal(99, retrieved.CardNames.Length);
-        Assert.Equal("Card Number 1", retrieved.CardNames[0]);
-        Assert.Equal("Card Number 99", retrieved.CardNames[98]);
+        Assert.Equal(99, retrieved.Cards.Length);
+        Assert.Equal("Card Number 1", retrieved.Cards[0].Name);
+        Assert.Equal("Card Number 99", retrieved.Cards[98].Name);
     }
 
     [Fact]
@@ -301,7 +321,7 @@ public class EtaliDatabaseTests
         using var context = new EtaliDatabase(options);
         
         // This is an edge case - normally wouldn't happen, but test the converter
-        var evaluatedHand = new EvaluatedHand(1, Array.Empty<string>(), 1, new[] { 6, 5, 4 }, false, 8, 1, "TestDeck", 0.0f);
+        var evaluatedHand = new EvaluatedHand(1, Array.Empty<Card>(), 1, new[] { 6, 5, 4 }, false, 8, 1, "TestDeck", 0.0f);
 
         // Act
         context.EvaluatedHands.Add(evaluatedHand);
@@ -327,7 +347,7 @@ public class EtaliDatabaseTests
         var stickers = new[] { 6, 5, 3 }; // Different values
         var evaluatedHand = new EvaluatedHand(
             1,
-            new[] { "C1", "C2", "C3", "C4", "C5", "C6", "C7" },
+            CreateTestCards(7, "C"),
             1,
             stickers,
             true,
@@ -362,20 +382,30 @@ public class EtaliDatabaseTests
         using var context = new EtaliDatabase(options);
 
         // Act - Multiple add operations
-        context.Decklists.Add(new Decklist { Id = 1, Name = "Deck1", CardNames = new[] { "C1" } });
+        context.Decklists.Add(new Decklist { Id = 1, Name = "Deck1", Cards = new[] { new Card { Name = "C1", Type = "Creature" } } });
         await context.SaveChangesAsync();
 
-        context.EvaluatedHands.Add(new EvaluatedHand(1, new[] { "C1", "C2", "C3", "C4", "C5", "C6", "C7" }, 1, new[] { 6, 5, 4 }, true, 3, 1, "Deck1", 0.0f));
+        context.EvaluatedHands.Add(new EvaluatedHand(1, CreateTestCards(7, "C"), 1, new[] { 6, 5, 4 }, true, 3, 1, "Deck1", 0.0f));
         await context.SaveChangesAsync();
 
-        context.Decklists.Add(new Decklist { Id = 2, Name = "Deck2", CardNames = new[] { "C2" } });
+        context.Decklists.Add(new Decklist { Id = 2, Name = "Deck2", Cards = new[] { new Card { Name = "C2", Type = "Instant" } } });
         await context.SaveChangesAsync();
 
-        context.EvaluatedHands.Add(new EvaluatedHand(2, new[] { "C1", "C2", "C3", "C4", "C5", "C6", "C7" }, 2, new[] { 5, 4, 3 }, false, 8, 2, "Deck2", 0.0f));
+        context.EvaluatedHands.Add(new EvaluatedHand(2, CreateTestCards(7, "C"), 2, new[] { 5, 4, 3 }, false, 8, 2, "Deck2", 0.0f));
         await context.SaveChangesAsync();
 
         // Assert
         Assert.Equal(2, await context.Decklists.CountAsync());
         Assert.Equal(2, await context.EvaluatedHands.CountAsync());
+    }
+
+    /// <summary>
+    /// Helper method to create test Card arrays.
+    /// </summary>
+    private Card[] CreateTestCards(int count, string prefix = "Card")
+    {
+        return Enumerable.Range(1, count)
+            .Select(i => new Card { Name = $"{prefix}{i}", Type = "Creature" })
+            .ToArray();
     }
 }

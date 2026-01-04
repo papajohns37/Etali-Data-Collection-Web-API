@@ -260,17 +260,17 @@ public class ApiEndpointsTests : IClassFixture<CustomWebApplicationFactory>
     {
         // Arrange
         var uniqueId = Random.Shared.Next(10000, 99999);
-        var evaluation = new
-        {
-            id = uniqueId,
-            cards = new[] { "Card1", "Card2", "Card3", "Card4", "Card5", "Card6", "Card7" },
-            seatOrder = 1,
-            stickers = Array.Empty<int>(),
-            canCastEtali = true,
-            minimumCardsToCastEtali = 5,
-            decklistId = 1,
-            decklistName = "TestDeck"
-        };
+        var evaluation = new EvaluatedHand(
+            uniqueId,
+            CustomWebApplicationFactory.CreateTestCards("Card1", "Card2", "Card3", "Card4", "Card5", "Card6", "Card7"),
+            1,
+            Array.Empty<int>(),
+            true,
+            5,
+            1,
+            "TestDeck",
+            0.0f
+        );
 
         // Act
         var response = await _client.PostAsJsonAsync("/hand/evaluate", evaluation);
@@ -286,13 +286,22 @@ public class ApiEndpointsTests : IClassFixture<CustomWebApplicationFactory>
         var uniqueId = Random.Shared.Next(10000, 99999);
         var jsonContent = new StringContent($@"{{
             ""id"": {uniqueId},
-            ""cards"": [""Card1"", ""Card2"", ""Card3"", ""Card4"", ""Card5"", ""Card6"", ""Card7""],
+            ""cards"": [
+                {{""name"": ""Card1"", ""type"": ""Creature""}},
+                {{""name"": ""Card2"", ""type"": ""Instant""}},
+                {{""name"": ""Card3"", ""type"": ""Sorcery""}},
+                {{""name"": ""Card4"", ""type"": ""Artifact""}},
+                {{""name"": ""Card5"", ""type"": ""Enchantment""}},
+                {{""name"": ""Card6"", ""type"": ""Land""}},
+                {{""name"": ""Card7"", ""type"": ""Planeswalker""}}
+            ],
             ""seatOrder"": 2,
             ""stickers"": [6, 5, 4],
             ""canCastEtali"": true,
             ""minimumCardsToCastEtali"": 5,
             ""decklistId"": 1,
-            ""decklistName"": ""TestDeck""
+            ""decklistName"": ""TestDeck"",
+            ""lowestGambleOdds"": 0.5
         }}", Encoding.UTF8, "application/json");
 
         // Act
@@ -309,13 +318,22 @@ public class ApiEndpointsTests : IClassFixture<CustomWebApplicationFactory>
         var uniqueId = Random.Shared.Next(10000, 99999);
         var jsonContent = new StringContent($@"{{
             ""Id"": {uniqueId},
-            ""Cards"": [""Card1"", ""Card2"", ""Card3"", ""Card4"", ""Card5"", ""Card6"", ""Card7""],
+            ""Cards"": [
+                {{""Name"": ""Card1"", ""Type"": ""Creature""}},
+                {{""Name"": ""Card2"", ""Type"": ""Instant""}},
+                {{""Name"": ""Card3"", ""Type"": ""Sorcery""}},
+                {{""Name"": ""Card4"", ""Type"": ""Artifact""}},
+                {{""Name"": ""Card5"", ""Type"": ""Enchantment""}},
+                {{""Name"": ""Card6"", ""Type"": ""Land""}},
+                {{""Name"": ""Card7"", ""Type"": ""Planeswalker""}}
+            ],
             ""SeatOrder"": 2,
             ""Stickers"": [6, 5, 4],
             ""CanCastEtali"": true,
             ""MinimumCardsToCastEtali"": 5,
             ""DecklistId"": 1,
-            ""DecklistName"": ""TestDeck""
+            ""DecklistName"": ""TestDeck"",
+            ""LowestGambleOdds"": 0.5
         }}", Encoding.UTF8, "application/json");
 
         // Act
