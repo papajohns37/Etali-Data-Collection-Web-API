@@ -43,19 +43,20 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
             {
                 if (!_seeded && !db.Decklists.Any())
                 {
+                    // Add first test deck
                     db.Decklists.Add(new Decklist
                     {
                         Id = 1,
                         Name = "TestDeck",
                         Cards = new[]
                         {
-                            new Card { Name = "Card1", Type = "Creature" },
-                            new Card { Name = "Card2", Type = "Instant" },
+                            new Card { Name = "Sol Ring", Type = "Artifact" },
+                            new Card { Name = "Mana Vault", Type = "Artifact" },
                             new Card { Name = "Card3", Type = "Sorcery" },
                             new Card { Name = "Card4", Type = "Artifact" },
                             new Card { Name = "Card5", Type = "Enchantment" },
-                            new Card { Name = "Card6", Type = "Land" },
-                            new Card { Name = "Card7", Type = "Planeswalker" },
+                            new Card { Name = "Mountain", Type = "Land" },
+                            new Card { Name = "Command Tower", Type = "Land" },
                             new Card { Name = "Card8", Type = "Creature" },
                             new Card { Name = "Card9", Type = "Instant" },
                             new Card { Name = "Card10", Type = "Land" }
@@ -64,6 +65,30 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
                         MoxfieldId = "test123",
                         CreatedAt = DateTime.UtcNow
                     });
+                    
+                    // Add second test deck for comparisons (with some unique and some shared cards)
+                    db.Decklists.Add(new Decklist
+                    {
+                        Id = 2,
+                        Name = "TestDeck2",
+                        Cards = new[]
+                        {
+                            new Card { Name = "Worn Powerstone", Type = "Artifact" },
+                            new Card { Name = "Thran Dynamo", Type = "Artifact" },
+                            new Card { Name = "Card3", Type = "Sorcery" },
+                            new Card { Name = "Card4", Type = "Artifact" },
+                            new Card { Name = "Card5", Type = "Enchantment" },
+                            new Card { Name = "Mountain", Type = "Land" },
+                            new Card { Name = "Command Tower", Type = "Land" },
+                            new Card { Name = "Card11", Type = "Creature" },
+                            new Card { Name = "Card12", Type = "Instant" },
+                            new Card { Name = "Card13", Type = "Land" }
+                        },
+                        MoxfieldUrl = "https://www.moxfield.com/decks/test456",
+                        MoxfieldId = "test456",
+                        CreatedAt = DateTime.UtcNow
+                    });
+                    
                     db.SaveChanges();
                     _seeded = true;
                 }
