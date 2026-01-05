@@ -58,6 +58,7 @@ builder.Services.AddScoped<IHandEvaluationService, HandEvaluationService>();
 builder.Services.AddScoped<IHandGenerationService, HandGenerationService>();
 builder.Services.AddScoped<IDecklistAddingService, DecklistAddingService>();
 builder.Services.AddScoped<IStatisticsService, StatisticsService>();
+builder.Services.AddScoped<IDeckComparisonService, DeckComparisonService>();
 
 // Add database context
 builder.Services.AddDbContext<EtaliDatabase>(options =>
@@ -143,6 +144,7 @@ app.MapHealthChecks("/health");
 app.MapHandEndpoints();
 app.MapDecklistEndpoints();
 app.MapStatisticsEndpoints();
+app.MapDeckComparisonEndpoints();
 
 app.Run();
 

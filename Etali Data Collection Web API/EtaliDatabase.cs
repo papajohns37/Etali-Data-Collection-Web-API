@@ -8,6 +8,8 @@ public class EtaliDatabase(DbContextOptions<EtaliDatabase> options) : DbContext(
 {
     public DbSet<EvaluatedHand> EvaluatedHands { get; set; } = null!;
     public DbSet<Decklist> Decklists { get; set; } = null!;
+    public DbSet<DeckComparison> DeckComparisons { get; set; } = null!;
+    public DbSet<ComparisonEvaluatedHand> ComparisonEvaluatedHands { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -35,6 +37,26 @@ public class EtaliDatabase(DbContextOptions<EtaliDatabase> options) : DbContext(
                 .HasConversion(
                     v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
                     v => JsonSerializer.Deserialize<Card[]>(v, (JsonSerializerOptions?)null) ?? Array.Empty<Card>());
+        });
+
+        // Configure DeckComparison
+        modelBuilder.Entity<DeckComparison>(entity =>
+        {
+            entity.HasKey(dc => dc.Id);
+        });
+
+        // Configure ComparisonEvaluatedHand
+        modelBuilder.Entity<ComparisonEvaluatedHand>(entity =>
+        {
+            entity.HasKey(ceh => ceh.Id);
+            entity.Property(ceh => ceh.Cards)
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                    v => JsonSerializer.Deserialize<Card[]>(v, (JsonSerializerOptions?)null) ?? Array.Empty<Card>());
+            entity.Property(ceh => ceh.Stickers)
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                    v => JsonSerializer.Deserialize<int[]>(v, (JsonSerializerOptions?)null) ?? Array.Empty<int>());
         });
     }
 }
