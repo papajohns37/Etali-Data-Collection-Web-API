@@ -1,17 +1,17 @@
-using Etali_Data_Collection_Web_API.Models;
-
 namespace Etali_Data_Collection_Web_API.Services;
 
-/// <summary>
-/// Defines the contract for generating random hands of cards.
-/// </summary>
+using Etali_Data_Collection_Web_API.Models;
+
 public interface IHandGenerationService
 {
     /// <summary>
-    /// Generates a new random hand with cards, seat order, and stickers from a specific decklist.
+    /// Generates a random hand from a specified decklist.
     /// </summary>
-    /// <param name="handId">The unique identifier to assign to this hand.</param>
-    /// <param name="decklistName">The name of the decklist to generate the hand from.</param>
-    /// <returns>A newly generated hand with random cards and metadata.</returns>
+    /// <param name="handId">The unique identifier for this hand.</param>
+    /// <param name="decklistName">The name of the decklist to generate from (case-insensitive).</param>
+    /// <returns>A randomly generated hand with cards, stickers, and metadata.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when the decklist is not found or has insufficient cards.
+    /// </exception>
     Hand GenerateHand(int handId, string decklistName);
 }

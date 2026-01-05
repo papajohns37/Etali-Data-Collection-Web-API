@@ -62,8 +62,13 @@ public class WorkflowTests : IClassFixture<CustomWebApplicationFactory>
         var content = await response.Content.ReadAsStringAsync();
         Assert.NotEmpty(content);
 
-        // Should contain error information
+        // Should contain error information in ProblemDetails format
         var jsonDoc = JsonDocument.Parse(content);
-        Assert.True(jsonDoc.RootElement.TryGetProperty("error", out _));
+        // ProblemDetails has properties like "title", "detail", "status"
+        Assert.True(
+            jsonDoc.RootElement.TryGetProperty("error", out _) || 
+            jsonDoc.RootElement.TryGetProperty("title", out _) ||
+            jsonDoc.RootElement.TryGetProperty("detail", out _),
+            "Response should contain error information (either 'error', 'title', or 'detail' property)");
     }
 }

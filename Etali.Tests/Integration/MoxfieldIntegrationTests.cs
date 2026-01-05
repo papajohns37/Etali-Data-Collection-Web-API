@@ -35,10 +35,11 @@ public class MoxfieldIntegrationTests : IClassFixture<CustomWebApplicationFactor
         var database = scope.ServiceProvider.GetRequiredService<EtaliDatabase>();
         var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
         var logger = loggerFactory.CreateLogger<DecklistAddingService>();
+        var httpClientFactory = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>();
         var moxfieldConfig = scope.ServiceProvider.GetRequiredService<MoxfieldConfiguration>();
         var rateLimiter = scope.ServiceProvider.GetRequiredService<IRateLimiter>();
 
-        var service = new DecklistAddingService(database, logger, moxfieldConfig, rateLimiter);
+        var service = new DecklistAddingService(database, logger, httpClientFactory, moxfieldConfig, rateLimiter);
 
         var moxfieldUrl = "https://moxfield.com/decks/JhWK-MfmY0W1V5feboKLxQ";
         var decklistName = "Moxfield Integration Test Deck";

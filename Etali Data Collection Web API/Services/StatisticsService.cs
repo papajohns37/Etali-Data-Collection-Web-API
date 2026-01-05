@@ -6,28 +6,23 @@ namespace Etali_Data_Collection_Web_API.Services;
 /// <summary>
 /// Service for calculating statistical analysis of decklist hand testing data.
 /// </summary>
-public class StatisticsService : IStatisticsService
+public class StatisticsService(EtaliDatabase database) : IStatisticsService
 {
-    private readonly EtaliDatabase _database;
     private const double ZScore90Percent = 1.645; // Z-score for 90% confidence interval
-
-    public StatisticsService(EtaliDatabase database)
-    {
-        _database = database;
-    }
+    private static readonly int[] HandSizes = [7, 6, 5, 4, 3];
 
     /// <inheritdoc/>
     public async Task<DecklistStatistics?> GetDecklistStatistics(int decklistId)
     {
         // Verify decklist exists
-        var decklist = await _database.Decklists.FirstOrDefaultAsync(d => d.Id == decklistId);
+        var decklist = await database.Decklists.FirstOrDefaultAsync(d => d.Id == decklistId);
         if (decklist == null)
         {
             return null;
         }
 
         // Get all evaluated hands for this decklist
-        var hands = await _database.EvaluatedHands
+        var hands = await database.EvaluatedHands
             .Where(h => h.DecklistId == decklistId)
             .ToListAsync();
 
@@ -40,7 +35,7 @@ public class StatisticsService : IStatisticsService
                 DecklistId: decklistId,
                 DecklistName: decklist.Name,
                 TotalHandsTested: 0,
-                HandSizeStatistics: Array.Empty<HandSizeStatistics>(),
+                HandSizeStatistics: [],
                 OverallMulliganProbability: 0,
                 OverallMulliganConfidenceIntervalLower: 0,
                 OverallMulliganConfidenceIntervalUpper: 0
@@ -51,7 +46,7 @@ public class StatisticsService : IStatisticsService
         var handSizeStats = new List<HandSizeStatistics>();
         var probabilities = new Dictionary<int, (double probability, double ciLower, double ciUpper)>();
 
-        foreach (int handSize in new[] { 7, 6, 5, 4, 3 })
+        foreach (int handSize in HandSizes)
         {
             var stats = CalculateHandSizeStatistics(hands, handSize);
             handSizeStats.Add(stats);
@@ -66,7 +61,7 @@ public class StatisticsService : IStatisticsService
             DecklistId: decklistId,
             DecklistName: decklist.Name,
             TotalHandsTested: totalHandsTested,
-            HandSizeStatistics: handSizeStats.ToArray(),
+            HandSizeStatistics: [.. handSizeStats],
             OverallMulliganProbability: overallProb,
             OverallMulliganConfidenceIntervalLower: overallCILower,
             OverallMulliganConfidenceIntervalUpper: overallCIUpper
@@ -79,7 +74,7 @@ public class StatisticsService : IStatisticsService
     /// <param name="hands">All evaluated hands for the decklist.</param>
     /// <param name="handSize">The hand size to calculate statistics for (3-7).</param>
     /// <returns>Statistics for the specified hand size.</returns>
-    private HandSizeStatistics CalculateHandSizeStatistics(List<EvaluatedHand> hands, int handSize)
+    private static HandSizeStatistics CalculateHandSizeStatistics(List<EvaluatedHand> hands, int handSize)
     {
         // A hand is successful at size N if minimumCardsToCastEtali <= N
         // This means the hand can cast Etali with N or fewer cards
@@ -113,7 +108,7 @@ public class StatisticsService : IStatisticsService
     /// especially for small sample sizes or extreme probabilities (near 0 or 1).
     /// Formula: https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval#Wilson_score_interval
     /// </remarks>
-    private (double lower, double upper) CalculateWilsonScoreInterval(int successes, int total, double zScore)
+    private static (double lower, double upper) CalculateWilsonScoreInterval(int successes, int total, double zScore)
     {
         if (total == 0)
         {
@@ -152,7 +147,7 @@ public class StatisticsService : IStatisticsService
     /// - Uses lower bounds to calculate lower CI (worst case)
     /// - Uses upper bounds to calculate upper CI (best case)
     /// </remarks>
-    private (double probability, double ciLower, double ciUpper) CalculateOverallMulliganProbability(
+    private static (double probability, double ciLower, double ciUpper) CalculateOverallMulliganProbability(
         Dictionary<int, (double probability, double ciLower, double ciUpper)> probabilities)
     {
         // Extract probabilities

@@ -4,20 +4,10 @@ namespace Etali_Data_Collection_Web_API.Services;
 /// Rate limiter that enforces a minimum time interval between requests.
 /// Thread-safe implementation using SemaphoreSlim.
 /// </summary>
-public class RateLimiter : IRateLimiter
+public class RateLimiter(TimeSpan minimumInterval) : IRateLimiter
 {
     private readonly SemaphoreSlim _semaphore = new(1, 1);
-    private readonly TimeSpan _minimumInterval;
     private DateTime _lastRequestTime = DateTime.MinValue;
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="RateLimiter"/> class.
-    /// </summary>
-    /// <param name="minimumInterval">The minimum time interval between requests.</param>
-    public RateLimiter(TimeSpan minimumInterval)
-    {
-        _minimumInterval = minimumInterval;
-    }
 
     /// <inheritdoc/>
     public async Task WaitIfNeededAsync()
@@ -27,9 +17,9 @@ public class RateLimiter : IRateLimiter
         {
             var timeSinceLastRequest = DateTime.UtcNow - _lastRequestTime;
             
-            if (timeSinceLastRequest < _minimumInterval)
+            if (timeSinceLastRequest < minimumInterval)
             {
-                var delay = _minimumInterval - timeSinceLastRequest;
+                var delay = minimumInterval - timeSinceLastRequest;
                 await Task.Delay(delay);
             }
             

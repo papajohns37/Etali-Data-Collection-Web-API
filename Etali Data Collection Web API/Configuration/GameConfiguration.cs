@@ -5,7 +5,8 @@ namespace Etali_Data_Collection_Web_API.Configuration;
 /// </summary>
 /// <remarks>
 /// This configuration class centralizes game-related constants for easy maintenance.
-/// In a production environment, these values could be loaded from appsettings.json or a database.
+/// Sticker values are fixed based on game rules and should not change.
+/// Sticker distribution: 1×6, 2×5, 6×4, 1×3
 /// </remarks>
 public class GameConfiguration
 {

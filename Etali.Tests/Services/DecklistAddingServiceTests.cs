@@ -17,6 +17,7 @@ public class DecklistAddingServiceTests
 {
     private readonly Mock<ILogger<DecklistAddingService>> _mockLogger;
     private readonly Mock<IRateLimiter> _mockRateLimiter;
+    private readonly Mock<IHttpClientFactory> _mockHttpClientFactory;
     private readonly MoxfieldConfiguration _mockConfig;
     private readonly EtaliDatabase _database;
 
@@ -24,6 +25,7 @@ public class DecklistAddingServiceTests
     {
         _mockLogger = new Mock<ILogger<DecklistAddingService>>();
         _mockRateLimiter = new Mock<IRateLimiter>();
+        _mockHttpClientFactory = new Mock<IHttpClientFactory>();
         _mockConfig = new MoxfieldConfiguration 
         { 
             BaseUrl = "https://api2.moxfield.com/v3/decks/all/",
@@ -40,7 +42,7 @@ public class DecklistAddingServiceTests
     public void DecklistAddingService_CanBeConstructed()
     {
         // Act
-        var service = new DecklistAddingService(_database, _mockLogger.Object, _mockConfig, _mockRateLimiter.Object);
+        var service = new DecklistAddingService(_database, _mockLogger.Object, _mockHttpClientFactory.Object, _mockConfig, _mockRateLimiter.Object);
 
         // Assert
         Assert.NotNull(service);
@@ -50,7 +52,7 @@ public class DecklistAddingServiceTests
     public void DecklistAddingService_ImplementsInterface()
     {
         // Act
-        var service = new DecklistAddingService(_database, _mockLogger.Object, _mockConfig, _mockRateLimiter.Object);
+        var service = new DecklistAddingService(_database, _mockLogger.Object, _mockHttpClientFactory.Object, _mockConfig, _mockRateLimiter.Object);
 
         // Assert
         Assert.IsAssignableFrom<IDecklistAddingService>(service);
@@ -62,7 +64,7 @@ public class DecklistAddingServiceTests
         // This test verifies that the service correctly generates IDs
         
         // Arrange
-        var service = new DecklistAddingService(_database, _mockLogger.Object, _mockConfig, _mockRateLimiter.Object);
+        var service = new DecklistAddingService(_database, _mockLogger.Object, _mockHttpClientFactory.Object, _mockConfig, _mockRateLimiter.Object);
         
         // Manually simulate what AddDecklist would do
         var nextId = _database.Decklists.Any() ? _database.Decklists.Max(d => d.Id) + 1 : 1;
@@ -75,8 +77,8 @@ public class DecklistAddingServiceTests
     public void AddDecklist_WithExistingDecklists_AssignsIncrementalId()
     {
         // Arrange
-        _database.Decklists.Add(new Decklist { Id = 1, Name = "Deck1", Cards = new[] { new Card { Name = "Card1", Type = "Creature" } } });
-        _database.Decklists.Add(new Decklist { Id = 5, Name = "Deck5", Cards = new[] { new Card { Name = "Card5", Type = "Artifact" } } });
+        _database.Decklists.Add(new Decklist { Id = 1, Name = "Deck1", Cards = [new Card { Name = "Card1", Type = "Creature" }] });
+        _database.Decklists.Add(new Decklist { Id = 5, Name = "Deck5", Cards = [new Card { Name = "Card5", Type = "Artifact" }] });
         _database.SaveChanges();
 
         // Act - Simulate what AddDecklist does
@@ -96,14 +98,14 @@ public class DecklistAddingServiceTests
         {
             Id = 1,
             Name = "TestMoxfieldDeck",
-            Cards = new[]
-            {
+            Cards =
+            [
                 new Card { Name = "Sol Ring", Type = "Artifact" },
                 new Card { Name = "Command Tower", Type = "Land" },
                 new Card { Name = "Lightning Bolt", Type = "Instant" },
                 new Card { Name = "Counterspell", Type = "Instant" },
                 new Card { Name = "Path to Exile", Type = "Instant" }
-            }
+            ]
         };
 
         // Act
@@ -154,8 +156,8 @@ public class DecklistAddingServiceTests
         {
             Id = 1,
             Name = "Special Chars Deck",
-            Cards = new[]
-            {
+            Cards =
+            [
                 new Card { Name = "Jace, the Mind Sculptor", Type = "Planeswalker" },
                 new Card { Name = "Urza's Saga", Type = "Enchantment — Saga" },
                 new Card { Name = "Serra's Sanctum", Type = "Legendary Land" },
@@ -164,7 +166,7 @@ public class DecklistAddingServiceTests
                 new Card { Name = "Slaughter // Mayhem", Type = "Instant // Sorcery" },
                 new Card { Name = "Fire // Ice", Type = "Instant // Instant" },
                 new Card { Name = "Dead // Gone", Type = "Instant // Instant" }
-            }
+            ]
         };
 
         // Act
@@ -190,7 +192,7 @@ public class DecklistAddingServiceTests
         // Verify that the service requires rate limiter dependency
         
         // Arrange & Act
-        var service = new DecklistAddingService(_database, _mockLogger.Object, _mockConfig, _mockRateLimiter.Object);
+        var service = new DecklistAddingService(_database, _mockLogger.Object, _mockHttpClientFactory.Object, _mockConfig, _mockRateLimiter.Object);
 
         // Assert
         Assert.NotNull(service);
@@ -266,8 +268,8 @@ public class DecklistAddingServiceTests
         {
             Id = 1,
             Name = "Complex Cards Deck",
-            Cards = new[]
-            {
+            Cards =
+            [
                 new Card { Name = "Teferi, Hero of Dominaria", Type = "Legendary Planeswalker" },
                 new Card { Name = "Oko, Thief of Crowns", Type = "Legendary Planeswalker" },
                 new Card { Name = "Nicol Bolas, Dragon-God", Type = "Legendary Planeswalker" },
@@ -277,7 +279,7 @@ public class DecklistAddingServiceTests
                 new Card { Name = "Who // What // When // Where // Why", Type = "Instant" },
                 new Card { Name = "Odds // Ends", Type = "Instant // Sorcery" },
                 new Card { Name = "Search the City", Type = "Enchantment" }
-            }
+            ]
         };
 
         // Act

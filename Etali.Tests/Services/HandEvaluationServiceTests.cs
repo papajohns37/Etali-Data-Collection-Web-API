@@ -21,16 +21,16 @@ public class HandEvaluationServiceTests
     }
 
     [Fact]
-    public void RecordEvaluation_ValidEvaluation_AddsToDatabase()
+    public async Task RecordEvaluation_ValidEvaluation_AddsToDatabase()
     {
         // Arrange
         var evaluation = CreateTestEvaluation(1);
 
         // Act
-        _service.RecordEvaluation(evaluation);
+        await _service.RecordEvaluation(evaluation);
 
         // Assert
-        var saved = _database.EvaluatedHands.FirstOrDefault(e => e.Id == 1);
+        var saved = await _database.EvaluatedHands.FirstOrDefaultAsync(e => e.Id == 1);
         Assert.NotNull(saved);
         Assert.Equal(1, saved.Id);
         Assert.Equal("TestDeck", saved.DecklistName);
@@ -51,9 +51,9 @@ public class HandEvaluationServiceTests
     public async Task GetAllEvaluations_WithMultipleEvaluations_ReturnsAll()
     {
         // Arrange
-        _service.RecordEvaluation(CreateTestEvaluation(1));
-        _service.RecordEvaluation(CreateTestEvaluation(2));
-        _service.RecordEvaluation(CreateTestEvaluation(3));
+        await _service.RecordEvaluation(CreateTestEvaluation(1));
+        await _service.RecordEvaluation(CreateTestEvaluation(2));
+        await _service.RecordEvaluation(CreateTestEvaluation(3));
 
         // Act
         var evaluations = await _service.GetAllEvaluations();
@@ -73,12 +73,12 @@ public class HandEvaluationServiceTests
     }
 
     [Fact]
-    public void GetNextHandId_WithExistingHands_ReturnsMaxPlusOne()
+    public async Task GetNextHandId_WithExistingHands_ReturnsMaxPlusOne()
     {
         // Arrange
-        _service.RecordEvaluation(CreateTestEvaluation(1));
-        _service.RecordEvaluation(CreateTestEvaluation(5));
-        _service.RecordEvaluation(CreateTestEvaluation(3));
+        await _service.RecordEvaluation(CreateTestEvaluation(1));
+        await _service.RecordEvaluation(CreateTestEvaluation(5));
+        await _service.RecordEvaluation(CreateTestEvaluation(3));
 
         // Act
         var nextId = _service.GetNextHandId();
@@ -88,7 +88,7 @@ public class HandEvaluationServiceTests
     }
 
     [Fact]
-    public void RecordEvaluation_MultipleEvaluations_MaintainsAllData()
+    public async Task RecordEvaluation_MultipleEvaluations_MaintainsAllData()
     {
         // Arrange
         var eval1 = new EvaluatedHand(
@@ -115,12 +115,12 @@ public class HandEvaluationServiceTests
         );
 
         // Act
-        _service.RecordEvaluation(eval1);
-        _service.RecordEvaluation(eval2);
+        await _service.RecordEvaluation(eval1);
+        await _service.RecordEvaluation(eval2);
 
         // Assert
-        var saved1 = _database.EvaluatedHands.FirstOrDefault(e => e.Id == 1);
-        var saved2 = _database.EvaluatedHands.FirstOrDefault(e => e.Id == 2);
+        var saved1 = await _database.EvaluatedHands.FirstOrDefaultAsync(e => e.Id == 1);
+        var saved2 = await _database.EvaluatedHands.FirstOrDefaultAsync(e => e.Id == 2);
         
         Assert.NotNull(saved1);
         Assert.True(saved1.CanCastEtali);
@@ -139,7 +139,7 @@ public class HandEvaluationServiceTests
         // Arrange - Pre-populate some evaluations
         for (int i = 1; i <= 5; i++)
         {
-            _service.RecordEvaluation(CreateTestEvaluation(i));
+            await _service.RecordEvaluation(CreateTestEvaluation(i));
         }
 
         // Act - Sequential calls
@@ -157,15 +157,15 @@ public class HandEvaluationServiceTests
     }
 
     [Fact]
-    public void RecordEvaluation_DuplicateId_ThrowsException()
+    public async Task RecordEvaluation_DuplicateId_ThrowsException()
     {
         // Arrange
         var evaluation1 = new EvaluatedHand(1, CreateTestCards(7, "C"), 1, new[] { 6, 5, 4 }, true, 3, 1, "Deck1", 0.0f);
         var evaluation2 = new EvaluatedHand(1, CreateTestCards(7, "D"), 2, new[] { 5, 4, 3 }, false, 8, 1, "Deck1", 0.0f);
 
         // Act
-        _service.RecordEvaluation(evaluation1);
-        var exception = Record.Exception(() => _service.RecordEvaluation(evaluation2));
+        await _service.RecordEvaluation(evaluation1);
+        var exception = await Record.ExceptionAsync(async () => await _service.RecordEvaluation(evaluation2));
 
         // Assert - Should throw due to duplicate primary key
         Assert.NotNull(exception);
@@ -173,7 +173,7 @@ public class HandEvaluationServiceTests
     }
 
     [Fact]
-    public void RecordEvaluation_CanCastEtaliFalse_AcceptsMinimumCards8()
+    public async Task RecordEvaluation_CanCastEtaliFalse_AcceptsMinimumCards8()
     {
         // Arrange
         var evaluation = new EvaluatedHand(
@@ -189,17 +189,17 @@ public class HandEvaluationServiceTests
         );
 
         // Act
-        _service.RecordEvaluation(evaluation);
+        await _service.RecordEvaluation(evaluation);
 
         // Assert
-        var saved = _database.EvaluatedHands.FirstOrDefault(e => e.Id == 1);
+        var saved = await _database.EvaluatedHands.FirstOrDefaultAsync(e => e.Id == 1);
         Assert.NotNull(saved);
         Assert.False(saved.CanCastEtali);
         Assert.Equal(8, saved.MinimumCardsToCastEtali);
     }
 
     [Fact]
-    public void RecordEvaluation_CanCastEtaliTrue_AllowsVariousMinimumCards()
+    public async Task RecordEvaluation_CanCastEtaliTrue_AllowsVariousMinimumCards()
     {
         // Act & Assert - Test various valid values when CanCastEtali is true
         for (int minCards = 1; minCards <= 7; minCards++)
@@ -216,9 +216,9 @@ public class HandEvaluationServiceTests
                 0.0f
             );
 
-            _service.RecordEvaluation(evaluation);
+            await _service.RecordEvaluation(evaluation);
 
-            var saved = _database.EvaluatedHands.FirstOrDefault(e => e.Id == minCards);
+            var saved = await _database.EvaluatedHands.FirstOrDefaultAsync(e => e.Id == minCards);
             Assert.NotNull(saved);
             Assert.True(saved.CanCastEtali);
             Assert.Equal(minCards, saved.MinimumCardsToCastEtali);
@@ -231,7 +231,7 @@ public class HandEvaluationServiceTests
         // Arrange - Add 50 evaluations
         for (int i = 1; i <= 50; i++)
         {
-            _service.RecordEvaluation(CreateTestEvaluation(i));
+            await _service.RecordEvaluation(CreateTestEvaluation(i));
         }
 
         // Act
@@ -243,13 +243,13 @@ public class HandEvaluationServiceTests
     }
 
     [Fact]
-    public void GetNextHandId_AfterMultipleAdds_ReturnsCorrectNextId()
+    public async Task GetNextHandId_AfterMultipleAdds_ReturnsCorrectNextId()
     {
         // Arrange - Add evaluations with non-sequential IDs
-        _service.RecordEvaluation(CreateTestEvaluation(1));
-        _service.RecordEvaluation(CreateTestEvaluation(10));
-        _service.RecordEvaluation(CreateTestEvaluation(5));
-        _service.RecordEvaluation(CreateTestEvaluation(25));
+        await _service.RecordEvaluation(CreateTestEvaluation(1));
+        await _service.RecordEvaluation(CreateTestEvaluation(10));
+        await _service.RecordEvaluation(CreateTestEvaluation(5));
+        await _service.RecordEvaluation(CreateTestEvaluation(25));
 
         // Act
         var nextId = _service.GetNextHandId();
@@ -259,7 +259,7 @@ public class HandEvaluationServiceTests
     }
 
     [Fact]
-    public void RecordEvaluation_PreservesAllFieldsAccurately()
+    public async Task RecordEvaluation_PreservesAllFieldsAccurately()
     {
         // Arrange
         var cards = new[]
@@ -276,10 +276,10 @@ public class HandEvaluationServiceTests
         var evaluation = new EvaluatedHand(999, cards, 3, stickers, true, 4, 10, "SpecialDeck", 0.85f);
 
         // Act
-        _service.RecordEvaluation(evaluation);
+        await _service.RecordEvaluation(evaluation);
 
         // Assert
-        var saved = _database.EvaluatedHands.FirstOrDefault(e => e.Id == 999);
+        var saved = await _database.EvaluatedHands.FirstOrDefaultAsync(e => e.Id == 999);
         Assert.NotNull(saved);
         Assert.Equal(7, saved.Cards.Length);
         Assert.Equal("Sol Ring", saved.Cards[0].Name);

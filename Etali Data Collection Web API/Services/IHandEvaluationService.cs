@@ -11,7 +11,7 @@ public interface IHandEvaluationService
     /// Records an evaluated hand in the collection.
     /// </summary>
     /// <param name="evaluation">The evaluated hand to record.</param>
-    void RecordEvaluation(EvaluatedHand evaluation);
+    Task RecordEvaluation(EvaluatedHand evaluation);
 
     /// <summary>
     /// Retrieves all recorded hand evaluations.

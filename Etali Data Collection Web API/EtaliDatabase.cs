@@ -1,43 +1,40 @@
+namespace Etali_Data_Collection_Web_API;
+
 using Etali_Data_Collection_Web_API.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
-namespace Etali_Data_Collection_Web_API
+public class EtaliDatabase(DbContextOptions<EtaliDatabase> options) : DbContext(options)
 {
-    public class EtaliDatabase : DbContext
+    public DbSet<EvaluatedHand> EvaluatedHands { get; set; } = null!;
+    public DbSet<Decklist> Decklists { get; set; } = null!;
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        public EtaliDatabase(DbContextOptions<EtaliDatabase> options) : base(options) { }
-        
-        public DbSet<EvaluatedHand> EvaluatedHands { get; set; } = null!;
-        public DbSet<Decklist> Decklists { get; set; } = null!;
+        base.OnModelCreating(modelBuilder);
 
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        // Configure EvaluatedHand
+        modelBuilder.Entity<EvaluatedHand>(entity =>
         {
-            base.OnModelCreating(modelBuilder);
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Cards)
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                    v => JsonSerializer.Deserialize<Card[]>(v, (JsonSerializerOptions?)null) ?? Array.Empty<Card>());
+            entity.Property(e => e.Stickers)
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                    v => JsonSerializer.Deserialize<int[]>(v, (JsonSerializerOptions?)null) ?? Array.Empty<int>());
+        });
 
-            // Configure EvaluatedHand
-            modelBuilder.Entity<EvaluatedHand>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.Cards)
-                    .HasConversion(
-                        v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
-                        v => JsonSerializer.Deserialize<Card[]>(v, (JsonSerializerOptions?)null) ?? Array.Empty<Card>());
-                entity.Property(e => e.Stickers)
-                    .HasConversion(
-                        v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
-                        v => JsonSerializer.Deserialize<int[]>(v, (JsonSerializerOptions?)null) ?? Array.Empty<int>());
-            });
-
-            // Configure Decklist
-            modelBuilder.Entity<Decklist>(entity =>
-            {
-                entity.HasKey(d => d.Id);
-                entity.Property(d => d.Cards)
-                    .HasConversion(
-                        v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
-                        v => JsonSerializer.Deserialize<Card[]>(v, (JsonSerializerOptions?)null) ?? Array.Empty<Card>());
-            });
-        }
+        // Configure Decklist
+        modelBuilder.Entity<Decklist>(entity =>
+        {
+            entity.HasKey(d => d.Id);
+            entity.Property(d => d.Cards)
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                    v => JsonSerializer.Deserialize<Card[]>(v, (JsonSerializerOptions?)null) ?? Array.Empty<Card>());
+        });
     }
 }
