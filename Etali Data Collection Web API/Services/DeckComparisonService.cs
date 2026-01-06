@@ -163,11 +163,20 @@ public class DeckComparisonService(
         }
 
         // Determine which deck to generate from (the one with lower N)
+        // Use overall N values if available and greater than comparison-specific N
+        int deck1N = (comparison.OverallDeck1N.HasValue && comparison.OverallDeck1N.Value > comparison.Deck1N) 
+            ? comparison.OverallDeck1N.Value 
+            : comparison.Deck1N;
+        
+        int deck2N = (comparison.OverallDeck2N.HasValue && comparison.OverallDeck2N.Value > comparison.Deck2N) 
+            ? comparison.OverallDeck2N.Value 
+            : comparison.Deck2N;
+
         int targetDeckId;
         int whichDeck;
         string targetDeckName;
 
-        if (comparison.Deck1N <= comparison.Deck2N)
+        if (deck1N <= deck2N)
         {
             targetDeckId = comparison.Deck1Id;
             whichDeck = 1;
@@ -219,8 +228,10 @@ public class DeckComparisonService(
             if (hasUniqueCard)
             {
                 logger.LogInformation(
-                    "Generated hand for comparison {ComparisonId}, deck {WhichDeck} after {Attempts} attempts",
-                    comparisonId, whichDeck, attempts);
+                    "Generated hand for comparison {ComparisonId}, deck {WhichDeck} (N: {Deck1N} vs {Deck2N}, using overall N: {UsingOverall}) after {Attempts} attempts",
+                    comparisonId, whichDeck, deck1N, deck2N, 
+                    comparison.OverallDeck1N.HasValue || comparison.OverallDeck2N.HasValue, 
+                    attempts);
 
                 return new ComparisonHand(
                     generatedHand.Id,
@@ -357,6 +368,11 @@ public class DeckComparisonService(
         // Main dataset N is the total count since all were randomly generated
         int deck1CombinedN = comparison.Deck1N + deck1MainHands.Count;
         int deck2CombinedN = comparison.Deck2N + deck2MainHands.Count;
+
+        // Update the comparison with the overall N values for future sampling decisions
+        comparison.OverallDeck1N = deck1CombinedN;
+        comparison.OverallDeck2N = deck2CombinedN;
+        await database.SaveChangesAsync();
 
         // Calculate statistics for each hand size using combined data
         var handSizeDeltaStats = new List<HandSizeDeltaStatistics>();

@@ -15,6 +15,8 @@ using System.ComponentModel;
 ///   "deck2Name": "Budget Etali",
 ///   "deck1N": 42,
 ///   "deck2N": 38,
+///   "overallDeck1N": 150,
+///   "overallDeck2N": 145,
 ///   "createdAt": "2024-01-15T10:30:00Z"
 /// }
 /// </example>
@@ -63,6 +65,22 @@ public class DeckComparison
     /// </summary>
     [Description("Number of hands generated for deck 2 (includes rejected hands)")]
     public int Deck2N { get; set; } = 0;
+    
+    /// <summary>
+    /// The overall number of hands available for deck 1, including comparison hands and filtered main dataset.
+    /// This value is updated when statistics are calculated and represents the total N used for sampling decisions.
+    /// When null or zero, falls back to Deck1N.
+    /// </summary>
+    [Description("Overall hands available for deck 1 (comparison + filtered main dataset, used for sampling)")]
+    public int? OverallDeck1N { get; set; }
+    
+    /// <summary>
+    /// The overall number of hands available for deck 2, including comparison hands and filtered main dataset.
+    /// This value is updated when statistics are calculated and represents the total N used for sampling decisions.
+    /// When null or zero, falls back to Deck2N.
+    /// </summary>
+    [Description("Overall hands available for deck 2 (comparison + filtered main dataset, used for sampling)")]
+    public int? OverallDeck2N { get; set; }
     
     /// <summary>
     /// The UTC timestamp when this comparison was created.
