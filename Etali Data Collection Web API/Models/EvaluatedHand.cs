@@ -15,6 +15,7 @@ namespace Etali_Data_Collection_Web_API.Models;
 /// <param name="DecklistId">The database ID of the decklist this hand was generated from.</param>
 /// <param name="DecklistName">The name of the decklist this hand was generated from.</param>
 /// <param name="LowestGambleOdds">The lowest Gamble odds value for this hand, representing probability.</param>
+/// <param name="CreatedByUserId">The ID of the user who evaluated this hand. Null for hands evaluated before authentication.</param>
 /// <remarks>
 /// The evaluation rules:
 /// - If CanCastEtali is true, MinimumCardsToCastEtali should be between 1 and 7 (inclusive)
@@ -63,5 +64,8 @@ public record EvaluatedHand(
     string DecklistName,
     
     [property: Description("Lowest Gamble odds value for this hand")]
-    float LowestGambleOdds
+    float LowestGambleOdds,
+    
+    [property: Description("ID of the user who evaluated this hand")]
+    string? CreatedByUserId = null
 );

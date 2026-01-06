@@ -64,4 +64,11 @@ public class Decklist
     /// <example>2024-01-15T10:30:00Z</example>
     [Description("UTC timestamp when the decklist was created")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    
+    /// <summary>
+    /// The ID of the user who created this decklist.
+    /// Null for decklists created before authentication was implemented.
+    /// </summary>
+    [Description("ID of the user who created this decklist")]
+    public string? CreatedByUserId { get; set; }
 }

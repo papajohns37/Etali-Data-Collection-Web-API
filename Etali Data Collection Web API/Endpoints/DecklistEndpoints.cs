@@ -5,12 +5,13 @@ using Etali_Data_Collection_Web_API.Services;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 public static class DecklistEndpoints
 {
     public static void MapDecklistEndpoints(this WebApplication app)
     {
-        // POST /decklist - Add a new decklist
+        // POST /decklist - Add a new decklist (Requires Authentication)
         app.MapPost("/decklist", AddDecklist)
             .WithName("AddDecklist")
             .WithTags("Decklists")
@@ -30,13 +31,18 @@ Rate limited to 1 request per second to respect Moxfield API limits.
 
 Parameters:
 - link: Full Moxfield URL (e.g., https://www.moxfield.com/decks/abc123)
-- name: Friendly name for the decklist"
+- name: Friendly name for the decklist
+
+**Authentication:** Required (Contributor or Admin role)
+**Authorization:** Bearer token in Authorization header"
             })
             .Produces(StatusCodes.Status200OK)
             .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
-            .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError);
+            .Produces<ProblemDetails>(StatusCodes.Status401Unauthorized)
+            .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError)
+            .RequireAuthorization("ContributorOrAdmin");
 
-        // GET /decklists - Get all decklists
+        // GET /decklists - Get all decklists (Public)
         app.MapGet("/decklists", GetDecklists)
             .WithName("GetDecklists")
             .WithTags("Decklists")
@@ -53,17 +59,38 @@ Each decklist includes:
 - moxfieldId: Moxfield deck ID (if imported)
 - createdAt: UTC timestamp when added
 
-Typically contains 99 cards for Commander format."
+Typically contains 99 cards for Commander format.
+
+**Authentication:** Not required (public endpoint)"
             })
-            .Produces<List<Decklist>>(StatusCodes.Status200OK);
+            .Produces<List<Decklist>>(StatusCodes.Status200OK)
+            .AllowAnonymous();
     }
 
     private static async Task<Ok<object>> AddDecklist(
         string link,
         string name,
-        IDecklistAddingService decklistAddingService)
+        IDecklistAddingService decklistAddingService,
+        ClaimsPrincipal user,
+        EtaliDatabase database)
     {
+        // Get user ID from claims
+        var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+        
         await decklistAddingService.AddDecklist(link, name);
+        
+        // Update the most recently added decklist with user ID
+        // (This assumes AddDecklist adds the decklist synchronously)
+        var decklist = await database.Decklists
+            .OrderByDescending(d => d.Id)
+            .FirstOrDefaultAsync();
+        
+        if (decklist != null && string.IsNullOrEmpty(decklist.CreatedByUserId))
+        {
+            decklist.CreatedByUserId = userId;
+            await database.SaveChangesAsync();
+        }
+        
         return TypedResults.Ok<object>(new { message = "Decklist added successfully" });
     }
 

@@ -4,6 +4,7 @@ using Etali_Data_Collection_Web_API.Models;
 using Etali_Data_Collection_Web_API.Services;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 public static class DeckComparisonEndpoints
 {
@@ -11,7 +12,7 @@ public static class DeckComparisonEndpoints
     {
         var comparisonGroup = app.MapGroup("/deck-comparisons").WithTags("Deck Comparisons");
 
-        // POST /deck-comparisons - Create a new deck comparison
+        // POST /deck-comparisons - Create a new deck comparison (Requires Authentication)
         comparisonGroup.MapPost("", CreateDeckComparison)
             .WithName("CreateDeckComparison")
             .WithOpenApi(operation => new(operation)
@@ -26,35 +27,46 @@ Request body:
 Order does not matter - a comparison between deck A and B is the same as B and A.
 Duplicate comparisons are not allowed.
 
-Both N values start at 0 and increment as hands are generated."
+Both N values start at 0 and increment as hands are generated.
+
+**Authentication:** Required (Contributor or Admin role)
+**Authorization:** Bearer token in Authorization header"
             })
             .Produces<DeckComparison>(StatusCodes.Status201Created)
             .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
+            .Produces<ProblemDetails>(StatusCodes.Status401Unauthorized)
             .Produces<ProblemDetails>(StatusCodes.Status404NotFound)
-            .Produces<ProblemDetails>(StatusCodes.Status409Conflict);
+            .Produces<ProblemDetails>(StatusCodes.Status409Conflict)
+            .RequireAuthorization("ContributorOrAdmin");
 
-        // GET /deck-comparisons - Get all comparisons
+        // GET /deck-comparisons - Get all comparisons (Public)
         comparisonGroup.MapGet("", GetAllComparisons)
             .WithName("GetAllComparisons")
             .WithOpenApi(operation => new(operation)
             {
                 Summary = "Get all deck comparisons",
-                Description = "Returns all deck comparisons in the system with their current N values."
-            })
-            .Produces<DeckComparison[]>(StatusCodes.Status200OK);
+                Description = @"Returns all deck comparisons in the system with their current N values.
 
-        // GET /deck-comparisons/{id} - Get a specific comparison
+**Authentication:** Not required (public endpoint)"
+            })
+            .Produces<DeckComparison[]>(StatusCodes.Status200OK)
+            .AllowAnonymous();
+
+        // GET /deck-comparisons/{id} - Get a specific comparison (Public)
         comparisonGroup.MapGet("{id:int}", GetComparisonById)
             .WithName("GetComparisonById")
             .WithOpenApi(operation => new(operation)
             {
                 Summary = "Get a specific deck comparison",
-                Description = "Returns details of a specific deck comparison including N values."
+                Description = @"Returns details of a specific deck comparison including N values.
+
+**Authentication:** Not required (public endpoint)"
             })
             .Produces<DeckComparison>(StatusCodes.Status200OK)
-            .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
+            .Produces<ProblemDetails>(StatusCodes.Status404NotFound)
+            .AllowAnonymous();
 
-        // GET /deck-comparisons/{id}/hand - Generate a hand for comparison
+        // GET /deck-comparisons/{id}/hand - Generate a hand for comparison (Requires Authentication)
         comparisonGroup.MapGet("{id:int}/hand", GenerateComparisonHand)
             .WithName("GenerateComparisonHand")
             .WithOpenApi(operation => new(operation)
@@ -71,13 +83,18 @@ Returns:
 - whichDeck: Which deck (1 or 2) the hand came from
 - generationAttempts: Number of hands generated (for N tracking)
 
-The generationAttempts value should be passed back when submitting the evaluation."
+The generationAttempts value should be passed back when submitting the evaluation.
+
+**Authentication:** Required (Contributor or Admin role)
+**Authorization:** Bearer token in Authorization header"
             })
             .Produces<ComparisonHand>(StatusCodes.Status200OK)
             .Produces<ProblemDetails>(StatusCodes.Status404NotFound)
-            .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError);
+            .Produces<ProblemDetails>(StatusCodes.Status401Unauthorized)
+            .Produces<ProblemDetails>(StatusCodes.Status500InternalServerError)
+            .RequireAuthorization("ContributorOrAdmin");
 
-        // POST /deck-comparisons/{id}/evaluate - Submit evaluation
+        // POST /deck-comparisons/{id}/evaluate - Submit evaluation (Requires Authentication)
         comparisonGroup.MapPost("{id:int}/evaluate", SubmitComparisonEvaluation)
             .WithName("SubmitComparisonEvaluation")
             .WithOpenApi(operation => new(operation)
@@ -90,13 +107,18 @@ Request body must include:
 - whichDeck: Which deck (1 or 2) the hand came from
 - generationAttempts: The attempt count from the hand generation
 
-The N value for the appropriate deck will be incremented by generationAttempts."
+The N value for the appropriate deck will be incremented by generationAttempts.
+
+**Authentication:** Required (Contributor or Admin role)
+**Authorization:** Bearer token in Authorization header"
             })
             .Produces<ComparisonEvaluatedHand>(StatusCodes.Status200OK)
             .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
-            .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
+            .Produces<ProblemDetails>(StatusCodes.Status401Unauthorized)
+            .Produces<ProblemDetails>(StatusCodes.Status404NotFound)
+            .RequireAuthorization("ContributorOrAdmin");
 
-        // GET /deck-comparisons/{id}/statistics - Get comparison statistics
+        // GET /deck-comparisons/{id}/statistics - Get comparison statistics (Public)
         comparisonGroup.MapGet("{id:int}/statistics", GetComparisonStatistics)
             .WithName("GetComparisonStatistics")
             .WithOpenApi(operation => new(operation)
@@ -125,23 +147,29 @@ Includes:
 - Total N values (all generation attempts including rejected hands)
 
 Note: Main dataset hands are filtered per-comparison to only include those
-with at least one card unique to the respective deck in this comparison."
+with at least one card unique to the respective deck in this comparison.
+
+**Authentication:** Not required (public endpoint)"
             })
             .Produces<DeckComparisonStatistics>(StatusCodes.Status200OK)
-            .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
+            .Produces<ProblemDetails>(StatusCodes.Status404NotFound)
+            .AllowAnonymous();
 
-        // GET /decklists/{id}/comparisons - Get comparisons for a deck
+        // GET /decklists/{id}/comparisons - Get comparisons for a deck (Public)
         var decklistGroup = app.MapGroup("/decklists/{decklistId:int}").WithTags("Decklists");
         decklistGroup.MapGet("comparisons", GetComparisonsForDeck)
             .WithName("GetComparisonsForDeck")
             .WithOpenApi(operation => new(operation)
             {
                 Summary = "Get all comparisons for a decklist",
-                Description = "Returns all comparisons that include the specified decklist (as either deck 1 or deck 2)."
-            })
-            .Produces<DeckComparison[]>(StatusCodes.Status200OK);
+                Description = @"Returns all comparisons that include the specified decklist (as either deck 1 or deck 2).
 
-        // GET /decklists/compare?deck1Id={id}&deck2Id={id} - Get card differences between any two decks
+**Authentication:** Not required (public endpoint)"
+            })
+            .Produces<DeckComparison[]>(StatusCodes.Status200OK)
+            .AllowAnonymous();
+
+        // GET /decklists/compare?deck1Id={id}&deck2Id={id} - Get card differences between any two decks (Public)
         var decklistsGroup = app.MapGroup("/decklists").WithTags("Decklists");
         decklistsGroup.MapGet("compare", GetCardDifferencesBetweenDecks)
             .WithName("GetCardDifferencesBetweenDecks")
@@ -162,11 +190,14 @@ Returns three lists of cards:
 Card comparison is done by card name. This endpoint is useful for:
 - Previewing differences before creating a comparison
 - Analyzing any two decks without creating a formal comparison
-- Building deck comparison tools"
+- Building deck comparison tools
+
+**Authentication:** Not required (public endpoint)"
             })
             .Produces<CardDifferences>(StatusCodes.Status200OK)
             .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
-            .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
+            .Produces<ProblemDetails>(StatusCodes.Status404NotFound)
+            .AllowAnonymous();
     }
 
     private static async Task<Results<Created<DeckComparison>, NotFound<ProblemDetails>, Conflict<ProblemDetails>, BadRequest<ProblemDetails>>> CreateDeckComparison(
@@ -265,14 +296,21 @@ Card comparison is done by card name. This endpoint is useful for:
     private static async Task<Results<Ok<ComparisonEvaluatedHand>, NotFound<ProblemDetails>, BadRequest<ProblemDetails>>> SubmitComparisonEvaluation(
         int id,
         [FromBody] SubmitComparisonEvaluationRequest request,
-        IDeckComparisonService comparisonService)
+        IDeckComparisonService comparisonService,
+        ClaimsPrincipal user)
     {
         try
         {
+            // Get user ID from claims
+            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+            
+            // Add user ID to the evaluated hand
+            var evaluatedHandWithUser = request.EvaluatedHand with { CreatedByUserId = userId };
+            
             var result = await comparisonService.SubmitComparisonEvaluationAsync(
                 id,
                 request.WhichDeck,
-                request.EvaluatedHand,
+                evaluatedHandWithUser,
                 request.GenerationAttempts);
             
             if (result == null)

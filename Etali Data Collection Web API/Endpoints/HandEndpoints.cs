@@ -4,12 +4,13 @@ using Etali_Data_Collection_Web_API.Models;
 using Etali_Data_Collection_Web_API.Services;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 public static class HandEndpoints
 {
     public static void MapHandEndpoints(this WebApplication app)
     {
-        // GET /hand - Generate a random hand
+        // GET /hand - Generate a random hand (Requires Authentication)
         app.MapGet("/hand", GenerateHand)
             .WithName("GenerateHand")
             .WithTags("Hands")
@@ -28,13 +29,18 @@ Additional hand properties:
 - Unique hand ID for later evaluation
 - Lowest Gamble odds value for probability calculations
 
-The decklistName parameter is case-insensitive."
+The decklistName parameter is case-insensitive.
+
+**Authentication:** Required (Contributor or Admin role)
+**Authorization:** Bearer token in Authorization header"
             })
             .Produces<Hand>(StatusCodes.Status200OK)
             .Produces<ProblemDetails>(StatusCodes.Status404NotFound)
-            .Produces<ProblemDetails>(StatusCodes.Status400BadRequest);
+            .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
+            .Produces<ProblemDetails>(StatusCodes.Status401Unauthorized)
+            .RequireAuthorization("ContributorOrAdmin");
 
-        // POST /hand/evaluate - Evaluate a hand
+        // POST /hand/evaluate - Evaluate a hand (Requires Authentication)
         app.MapPost("/hand/evaluate", EvaluateHand)
             .WithName("EvaluateHand")
             .WithTags("Hands")
@@ -56,12 +62,17 @@ Request body must include:
 
 Evaluation rules:
 - If CanCastEtali is true, MinimumCardsToCastEtali should be 1-7
-- If CanCastEtali is false, MinimumCardsToCastEtali should be 8"
+- If CanCastEtali is false, MinimumCardsToCastEtali should be 8
+
+**Authentication:** Required (Contributor or Admin role)
+**Authorization:** Bearer token in Authorization header"
             })
             .Produces(StatusCodes.Status200OK)
-            .Produces<ProblemDetails>(StatusCodes.Status400BadRequest);
+            .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
+            .Produces<ProblemDetails>(StatusCodes.Status401Unauthorized)
+            .RequireAuthorization("ContributorOrAdmin");
 
-        // GET /hands/evaluated - Get all evaluated hands
+        // GET /hands/evaluated - Get all evaluated hands (Public)
         app.MapGet("/hands/evaluated", GetEvaluatedHands)
             .WithName("GetEvaluatedHands")
             .WithTags("Hands")
@@ -77,9 +88,12 @@ Each evaluation includes:
 - decklistId and decklistName: Source information
 - lowestGambleOdds: Gamble probability value
 
-Used for statistical analysis and data export."
+Used for statistical analysis and data export.
+
+**Authentication:** Not required (public endpoint)"
             })
-            .Produces<IReadOnlyList<EvaluatedHand>>(StatusCodes.Status200OK);
+            .Produces<IReadOnlyList<EvaluatedHand>>(StatusCodes.Status200OK)
+            .AllowAnonymous();
     }
 
     private static Results<Ok<Hand>, NotFound<ProblemDetails>> GenerateHand(
@@ -106,9 +120,16 @@ Used for statistical analysis and data export."
 
     private static async Task<Ok<object>> EvaluateHand(
         EvaluatedHand evaluation,
-        IHandEvaluationService handEvaluationService)
+        IHandEvaluationService handEvaluationService,
+        ClaimsPrincipal user)
     {
-        await handEvaluationService.RecordEvaluation(evaluation);
+        // Get user ID from claims
+        var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+        
+        // Create evaluation with user ID
+        var evaluationWithUser = evaluation with { CreatedByUserId = userId };
+        
+        await handEvaluationService.RecordEvaluation(evaluationWithUser);
         return TypedResults.Ok<object>(new { message = "Hand evaluation recorded", handId = evaluation.Id });
     }
 

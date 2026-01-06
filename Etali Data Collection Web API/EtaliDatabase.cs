@@ -1,10 +1,12 @@
 namespace Etali_Data_Collection_Web_API;
 
 using Etali_Data_Collection_Web_API.Models;
+using Etali_Data_Collection_Web_API.Models.Auth;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
-public class EtaliDatabase(DbContextOptions<EtaliDatabase> options) : DbContext(options)
+public class EtaliDatabase(DbContextOptions<EtaliDatabase> options) : IdentityDbContext<ApplicationUser>(options)
 {
     public DbSet<EvaluatedHand> EvaluatedHands { get; set; } = null!;
     public DbSet<Decklist> Decklists { get; set; } = null!;
