@@ -99,16 +99,21 @@ Used for statistical analysis and data export.
     private static Results<Ok<Hand>, NotFound<ProblemDetails>> GenerateHand(
         string decklistName,
         IHandGenerationService handGenerationService,
-        IHandEvaluationService handEvaluationService)
+        IHandEvaluationService handEvaluationService,
+        ILogger<Program> logger)
     {
+        logger.LogInformation("Generating hand for decklist: '{DecklistName}'", decklistName);
+        
         try
         {
             var handId = handEvaluationService.GetNextHandId();
             var hand = handGenerationService.GenerateHand(handId, decklistName);
+            logger.LogInformation("Successfully generated hand {HandId} for decklist '{DecklistName}'", handId, decklistName);
             return TypedResults.Ok(hand);
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogWarning("Decklist not found: '{DecklistName}'. Error: {Message}", decklistName, ex.Message);
             return TypedResults.NotFound(new ProblemDetails
             {
                 Status = StatusCodes.Status404NotFound,

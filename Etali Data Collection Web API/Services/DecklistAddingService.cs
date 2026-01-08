@@ -18,7 +18,7 @@ public partial class DecklistAddingService(
     private static readonly Regex MoxfieldUrlPattern = new(@"moxfield\.com/decks/([a-zA-Z0-9_-]+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     /// <inheritdoc/>
-    public async Task AddDecklist(string link, string name)
+    public async Task AddDecklist(string link, string name, string? createdByUserId = null)
     {
         string json = await GetDecklistAsync(link);
         
@@ -40,12 +40,13 @@ public partial class DecklistAddingService(
             Cards = [.. cards],
             MoxfieldUrl = moxfieldUrl,
             MoxfieldId = moxfieldId,
-            CreatedAt = createdAt
+            CreatedAt = createdAt,
+            CreatedByUserId = createdByUserId
         });
         
         await database.SaveChangesAsync();
-        logger.LogInformation("Decklist '{DecklistName}' (Moxfield ID: {MoxfieldId}) added with ID {DecklistId} containing {CardCount} cards at {CreatedAt:yyyy-MM-dd HH:mm:ss} UTC",
-            name, moxfieldId, nextId, cards.Count, createdAt);
+        logger.LogInformation("Decklist '{DecklistName}' (Moxfield ID: {MoxfieldId}) added with ID {DecklistId} containing {CardCount} cards at {CreatedAt:yyyy-MM-dd HH:mm:ss} UTC by user {UserId}",
+            name, moxfieldId, nextId, cards.Count, createdAt, createdByUserId ?? "anonymous");
     }
 
     private List<Card> ExtractMainboardCards(string json)

@@ -35,7 +35,7 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
     {
         builder.ConfigureAppConfiguration((context, config) =>
         {
-            // Add test configuration for JWT
+            // Add test configuration for JWT and Database
             config.AddInMemoryCollection(new Dictionary<string, string>
             {
                 ["Jwt:SecretKey"] = "TestSecretKeyForJwtTokenGenerationThatIsAtLeast64CharactersLong12345",
@@ -43,16 +43,28 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
                 ["Jwt:Audience"] = "EtaliDataCollectionApi",
                 ["Jwt:ExpirationInDays"] = "7",
                 ["DefaultAdmin:Username"] = TestAdminUsername,
-                ["DefaultAdmin:Password"] = TestAdminPassword
+                ["DefaultAdmin:Password"] = TestAdminPassword,
+                ["ConnectionStrings:EtaliDatabase"] = "Host=localhost;Database=test_db;Username=test;Password=test",
+                ["Database:AutoMigrate"] = "false"
             }!);
         });
 
         builder.ConfigureServices(services =>
         {
-            // Remove the existing DbContext registration
-            services.RemoveAll<DbContextOptions<EtaliDatabase>>();
+            // Remove the PostgreSQL DbContext registration
+            var descriptors = services.Where(d =>
+                d.ServiceType == typeof(DbContextOptions<EtaliDatabase>) ||
+                d.ServiceType == typeof(DbContextOptions)).ToList();
 
-            // Add a database context with UNIQUE name per factory instance
+            foreach (var descriptor in descriptors)
+            {
+                services.Remove(descriptor);
+            }
+
+            // Also remove the EtaliDatabase itself
+            services.RemoveAll<EtaliDatabase>();
+
+            // Add InMemory database context with UNIQUE name per factory instance for test isolation
             services.AddDbContext<EtaliDatabase>(options =>
             {
                 options.UseInMemoryDatabase(_databaseName);

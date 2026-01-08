@@ -44,7 +44,7 @@ public class DecklistEndpointTests : IClassFixture<CustomWebApplicationFactory>
         
         // Create a factory with mocked DecklistAddingService
         var mockService = new Mock<IDecklistAddingService>();
-        mockService.Setup(s => s.AddDecklist(It.IsAny<string>(), It.IsAny<string>()))
+        mockService.Setup(s => s.AddDecklist(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>()))
             .Returns(Task.CompletedTask);
 
         var factory = _factory.WithMockedServices(services =>
@@ -66,7 +66,7 @@ public class DecklistEndpointTests : IClassFixture<CustomWebApplicationFactory>
         var result = await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
         Assert.Equal("Decklist added successfully", result.GetProperty("message").GetString());
 
-        mockService.Verify(s => s.AddDecklist("https://test.com", "NewDeck"), Times.Once);
+        mockService.Verify(s => s.AddDecklist("https://test.com", "NewDeck", It.IsAny<string?>()), Times.Once);
     }
 
     [Fact]
@@ -90,7 +90,7 @@ public class DecklistEndpointTests : IClassFixture<CustomWebApplicationFactory>
         
         // Mock service that throws
         var mockService = new Mock<IDecklistAddingService>();
-        mockService.Setup(s => s.AddDecklist(It.IsAny<string>(), It.IsAny<string>()))
+        mockService.Setup(s => s.AddDecklist(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>()))
             .ThrowsAsync(new InvalidOperationException("Moxfield error"));
 
         var factory = _factory.WithMockedServices(services =>

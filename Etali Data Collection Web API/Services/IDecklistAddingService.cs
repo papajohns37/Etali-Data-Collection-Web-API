@@ -7,5 +7,6 @@ public interface IDecklistAddingService
     /// </summary>
     /// <param name="link">The Moxfield URL for the decklist.</param>
     /// <param name="name">The name to assign to the decklist.</param>
-    Task AddDecklist(string link, string name);
+    /// <param name="createdByUserId">Optional user ID of the creator.</param>
+    Task AddDecklist(string link, string name, string? createdByUserId = null);
 }

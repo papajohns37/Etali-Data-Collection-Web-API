@@ -13,8 +13,10 @@ public class HandGenerationService(GameConfiguration configuration, EtaliDatabas
     public Hand GenerateHand(int handId, string decklistName)
     {
         // Look up the decklist by name (case-insensitive)
+        // Use ToLower() which translates better to PostgreSQL than string.Equals with StringComparison
+        var lowerName = decklistName.ToLower();
         var decklist = database.Decklists
-            .FirstOrDefault(d => string.Equals(d.Name, decklistName, StringComparison.OrdinalIgnoreCase));
+            .FirstOrDefault(d => d.Name.ToLower() == lowerName);
 
         if (decklist == null)
         {

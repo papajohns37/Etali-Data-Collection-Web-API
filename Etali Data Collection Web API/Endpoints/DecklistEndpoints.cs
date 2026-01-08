@@ -71,25 +71,13 @@ Typically contains 99 cards for Commander format.
         string link,
         string name,
         IDecklistAddingService decklistAddingService,
-        ClaimsPrincipal user,
-        EtaliDatabase database)
+        ClaimsPrincipal user)
     {
         // Get user ID from claims
         var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
         
-        await decklistAddingService.AddDecklist(link, name);
-        
-        // Update the most recently added decklist with user ID
-        // (This assumes AddDecklist adds the decklist synchronously)
-        var decklist = await database.Decklists
-            .OrderByDescending(d => d.Id)
-            .FirstOrDefaultAsync();
-        
-        if (decklist != null && string.IsNullOrEmpty(decklist.CreatedByUserId))
-        {
-            decklist.CreatedByUserId = userId;
-            await database.SaveChangesAsync();
-        }
+        // Add the decklist with user ID
+        await decklistAddingService.AddDecklist(link, name, userId);
         
         return TypedResults.Ok<object>(new { message = "Decklist added successfully" });
     }

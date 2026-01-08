@@ -39,6 +39,14 @@ builder.Services.AddCors(options =>
 // Register application services
 builder.Services.AddSingleton<GameConfiguration>();
 
+// Configure Database settings with validation
+builder.Services.AddOptions<DatabaseConfiguration>()
+    .Bind(builder.Configuration.GetSection("Database"))
+    .ValidateOnStart();
+
+builder.Services.AddSingleton(sp =>
+    sp.GetRequiredService<IOptions<DatabaseConfiguration>>().Value);
+
 // Configure Moxfield API settings with validation
 builder.Services.AddOptions<MoxfieldConfiguration>()
     .Bind(builder.Configuration.GetSection("MoxfieldApi"))
@@ -74,9 +82,42 @@ builder.Services.AddScoped<IStatisticsService, StatisticsService>();
 builder.Services.AddScoped<IDeckComparisonService, DeckComparisonService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
-// Add database context
+// Get database configuration
+var dbConfig = builder.Configuration.GetSection("Database").Get<DatabaseConfiguration>() 
+    ?? new DatabaseConfiguration();
+
+// Add database context with PostgreSQL
+var connectionString = builder.Configuration.GetConnectionString("EtaliDatabase");
+if (string.IsNullOrEmpty(connectionString))
+{
+    throw new InvalidOperationException(
+        "Database connection string 'EtaliDatabase' is not configured. " +
+        "Please set ConnectionStrings:EtaliDatabase in appsettings.json or user secrets.");
+}
+
 builder.Services.AddDbContext<EtaliDatabase>(options =>
-    options.UseInMemoryDatabase("EtaliDatabase"));
+{
+    options.UseNpgsql(connectionString, npgsqlOptions =>
+    {
+        npgsqlOptions.EnableRetryOnFailure(
+            maxRetryCount: dbConfig.MaxRetryCount,
+            maxRetryDelay: TimeSpan.FromSeconds(dbConfig.MaxRetryDelay),
+            errorCodesToAdd: null);
+        
+        npgsqlOptions.CommandTimeout(dbConfig.CommandTimeout);
+        npgsqlOptions.MaxBatchSize(dbConfig.PoolSize);
+    });
+
+    if (dbConfig.EnableSensitiveDataLogging)
+    {
+        options.EnableSensitiveDataLogging();
+    }
+
+    if (dbConfig.EnableDetailedErrors)
+    {
+        options.EnableDetailedErrors();
+    }
+});
 
 // Configure ASP.NET Core Identity
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
@@ -137,14 +178,14 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("ContributorOrAdmin", policy => policy.RequireRole("Contributor", "Admin"));
 });
 
-// Add health checks
+// Add health checks with PostgreSQL connectivity check
 builder.Services.AddHealthChecks()
-    .AddCheck("database", () =>
-    {
-        // Simple health check that always returns healthy
-        // In production, this would check actual database connectivity
-        return HealthCheckResult.Healthy("Database is accessible");
-    });
+    .AddNpgSql(
+        connectionString,
+        name: "postgresql",
+        failureStatus: HealthStatus.Unhealthy,
+        tags: new[] { "db", "sql", "postgresql" },
+        timeout: TimeSpan.FromSeconds(5));
 
 // Add Swagger services
 builder.Services.AddEndpointsApiExplorer();
@@ -232,8 +273,8 @@ builder.Logging.AddDebug();
 
 var app = builder.Build();
 
-// Seed database with roles and admin user
-await SeedDatabaseAsync(app.Services);
+// Run database migrations and seed data
+await InitializeDatabaseAsync(app.Services, dbConfig);
 
 // Enable CORS
 app.UseCors();
@@ -265,6 +306,65 @@ app.MapStatisticsEndpoints();
 app.MapDeckComparisonEndpoints();
 
 app.Run();
+
+// Initialize database with migrations and seed data
+static async Task InitializeDatabaseAsync(IServiceProvider services, DatabaseConfiguration dbConfig)
+{
+    using var scope = services.CreateScope();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    
+    try
+    {
+        var db = scope.ServiceProvider.GetRequiredService<EtaliDatabase>();
+        
+        // Check if we're using InMemory database (for tests)
+        var providerName = db.Database.ProviderName;
+        var isInMemoryDatabase = providerName == "Microsoft.EntityFrameworkCore.InMemory";
+        
+        if (isInMemoryDatabase)
+        {
+            // For InMemory database (tests), just ensure it's created
+            await db.Database.EnsureCreatedAsync();
+            logger.LogInformation("InMemory database created for testing");
+        }
+        else
+        {
+            // For real databases (PostgreSQL), check for pending migrations
+            var pendingMigrations = await db.Database.GetPendingMigrationsAsync();
+            var hasPendingMigrations = pendingMigrations.Any();
+            
+            if (hasPendingMigrations)
+            {
+                logger.LogInformation("Found {Count} pending migrations", pendingMigrations.Count());
+                
+                if (dbConfig.AutoMigrate)
+                {
+                    logger.LogInformation("Auto-migrating database...");
+                    await db.Database.MigrateAsync();
+                    logger.LogInformation("Database migration completed successfully");
+                }
+                else
+                {
+                    logger.LogWarning(
+                        "Database has pending migrations but AutoMigrate is disabled. " +
+                        "Run 'dotnet ef database update' to apply migrations manually.");
+                }
+            }
+            else
+            {
+                logger.LogInformation("Database is up to date");
+            }
+        }
+        
+        // Seed roles and admin user
+        await SeedDatabaseAsync(services);
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "An error occurred while initializing the database");
+        throw;
+    }
+}
 
 // Seed database with initial data
 static async Task SeedDatabaseAsync(IServiceProvider services)
