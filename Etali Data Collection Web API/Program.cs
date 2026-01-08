@@ -3,7 +3,6 @@ using System.Text;
 using Etali_Data_Collection_Web_API;
 using Etali_Data_Collection_Web_API.Configuration;
 using Etali_Data_Collection_Web_API.Endpoints;
-using Etali_Data_Collection_Web_API.Models;
 using Etali_Data_Collection_Web_API.Models.Auth;
 using Etali_Data_Collection_Web_API.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -89,11 +88,12 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     options.Password.RequireNonAlphanumeric = true;
     options.Password.RequiredLength = 6;
     
-    // User settings
-    options.User.RequireUniqueEmail = true;
+    // User settings - do not require email
+    options.User.RequireUniqueEmail = false;
+    options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._";
     
     // Sign-in settings
-    options.SignIn.RequireConfirmedEmail = false; // Simplified for now
+    options.SignIn.RequireConfirmedEmail = false;
 })
 .AddEntityFrameworkStores<EtaliDatabase>()
 .AddDefaultTokenProviders();
@@ -287,19 +287,19 @@ static async Task SeedDatabaseAsync(IServiceProvider services)
     }
 
     // Create default admin user if configured
-    var adminEmail = configuration["DefaultAdmin:Email"];
+    var adminUsername = configuration["DefaultAdmin:Username"];
     var adminPassword = configuration["DefaultAdmin:Password"];
 
-    if (!string.IsNullOrEmpty(adminEmail) && !string.IsNullOrEmpty(adminPassword))
+    if (!string.IsNullOrEmpty(adminUsername) && !string.IsNullOrEmpty(adminPassword))
     {
-        var existingAdmin = await userManager.FindByEmailAsync(adminEmail);
+        var existingAdmin = await userManager.FindByNameAsync(adminUsername);
         if (existingAdmin == null)
         {
             var adminUser = new ApplicationUser
             {
-                UserName = adminEmail,
-                Email = adminEmail,
-                EmailConfirmed = true,
+                UserName = adminUsername,
+                Email = null,
+                EmailConfirmed = false,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -307,7 +307,7 @@ static async Task SeedDatabaseAsync(IServiceProvider services)
             if (result.Succeeded)
             {
                 await userManager.AddToRoleAsync(adminUser, "Admin");
-                logger.LogInformation("Default admin user created: {Email}", adminEmail);
+                logger.LogInformation("Default admin user created: {Username}", adminUsername);
             }
             else
             {
@@ -318,7 +318,7 @@ static async Task SeedDatabaseAsync(IServiceProvider services)
     }
     else
     {
-        logger.LogWarning("Default admin credentials not configured. Please set DefaultAdmin:Email and DefaultAdmin:Password in user secrets or configuration.");
+        logger.LogWarning("Default admin credentials not configured. Please set DefaultAdmin:Username and DefaultAdmin:Password in user secrets or configuration.");
     }
 }
 

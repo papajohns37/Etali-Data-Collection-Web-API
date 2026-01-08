@@ -21,13 +21,13 @@ public class AuthService(
     private const string ContributorRole = "Contributor";
 
     /// <inheritdoc/>
-    public async Task<(bool Success, string[] Errors)> RegisterUserAsync(string email, string password, bool isAdmin)
+    public async Task<(bool Success, string[] Errors)> RegisterUserAsync(string username, string password, bool isAdmin)
     {
         var user = new ApplicationUser
         {
-            UserName = email,
-            Email = email,
-            EmailConfirmed = true, // Auto-confirm for simplicity
+            UserName = username,
+            Email = null,
+            EmailConfirmed = false,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -36,7 +36,7 @@ public class AuthService(
         if (!result.Succeeded)
         {
             var errors = result.Errors.Select(e => e.Description).ToArray();
-            logger.LogWarning("Failed to register user {Email}: {Errors}", email, string.Join(", ", errors));
+            logger.LogWarning("Failed to register user {Username}: {Errors}", username, string.Join(", ", errors));
             return (false, errors);
         }
 
@@ -47,30 +47,37 @@ public class AuthService(
         if (!roleResult.Succeeded)
         {
             var errors = roleResult.Errors.Select(e => e.Description).ToArray();
-            logger.LogError("Failed to assign role {Role} to user {Email}: {Errors}", role, email, string.Join(", ", errors));
+            logger.LogError("Failed to assign role {Role} to user {Username}: {Errors}", role, username, string.Join(", ", errors));
             // User was created but role assignment failed - consider this a failure
             await userManager.DeleteAsync(user);
             return (false, errors);
         }
 
-        logger.LogInformation("User {Email} registered successfully with role {Role}", email, role);
+        logger.LogInformation("User {Username} registered successfully with role {Role}", username, role);
         return (true, []);
     }
 
     /// <inheritdoc/>
-    public async Task<LoginResponse?> LoginAsync(string email, string password)
+    public async Task<LoginResponse?> LoginAsync(string username, string password)
     {
-        var user = await userManager.FindByEmailAsync(email);
+        // Validate inputs
+        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+        {
+            logger.LogWarning("Login attempt failed: Missing username or password");
+            return null;
+        }
+
+        var user = await userManager.FindByNameAsync(username);
         if (user == null)
         {
-            logger.LogWarning("Login attempt failed: User {Email} not found", email);
+            logger.LogWarning("Login attempt failed: User {Username} not found", username);
             return null;
         }
 
         var result = await signInManager.CheckPasswordSignInAsync(user, password, lockoutOnFailure: false);
         if (!result.Succeeded)
         {
-            logger.LogWarning("Login attempt failed: Invalid password for user {Email}", email);
+            logger.LogWarning("Login attempt failed: Invalid password for user {Username}", username);
             return null;
         }
 
@@ -81,12 +88,12 @@ public class AuthService(
         var token = GenerateJwtToken(user, roles);
         var expiration = DateTime.UtcNow.AddDays(jwtConfig.ExpirationInDays);
 
-        logger.LogInformation("User {Email} logged in successfully", email);
+        logger.LogInformation("User {Username} logged in successfully", username);
 
         return new LoginResponse(
             Token: token,
             Expiration: expiration,
-            Email: user.Email!,
+            Username: user.UserName!,
             Roles: [.. roles]
         );
     }
@@ -99,10 +106,8 @@ public class AuthService(
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, user.Id),
-            new(ClaimTypes.Name, user.Email!),
-            new(ClaimTypes.Email, user.Email!),
+            new(ClaimTypes.Name, user.UserName!),
             new(JwtRegisteredClaimNames.Sub, user.Id),
-            new(JwtRegisteredClaimNames.Email, user.Email!),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 

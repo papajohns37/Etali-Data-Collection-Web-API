@@ -11,18 +11,33 @@ namespace Etali.Tests.Integration;
 [Trait("Category", "Integration")]
 public class HandEndpointTests : IClassFixture<CustomWebApplicationFactory>
 {
+    private readonly CustomWebApplicationFactory _factory;
     private readonly HttpClient _client;
 
     public HandEndpointTests(CustomWebApplicationFactory factory)
     {
+        _factory = factory;
         _client = factory.CreateClient();
     }
 
     [Fact]
-    public async Task GetHand_ValidDecklistName_ReturnsOkWithHand()
+    public async Task GetHand_WithoutAuthentication_ReturnsUnauthorized()
     {
         // Act
         var response = await _client.GetAsync("/hand?decklistName=TestDeck");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetHand_WithAuthentication_ValidDecklistName_ReturnsOkWithHand()
+    {
+        // Arrange
+        var authenticatedClient = await _factory.CreateAuthenticatedClientAsync();
+
+        // Act
+        var response = await authenticatedClient.GetAsync("/hand?decklistName=TestDeck");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -37,10 +52,13 @@ public class HandEndpointTests : IClassFixture<CustomWebApplicationFactory>
     }
 
     [Fact]
-    public async Task GetHand_NonExistentDecklistName_ReturnsNotFound()
+    public async Task GetHand_WithAuthentication_NonExistentDecklistName_ReturnsNotFound()
     {
+        // Arrange
+        var authenticatedClient = await _factory.CreateAuthenticatedClientAsync();
+
         // Act
-        var response = await _client.GetAsync("/hand?decklistName=NonExistent");
+        var response = await authenticatedClient.GetAsync("/hand?decklistName=NonExistent");
 
         // Assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
@@ -50,10 +68,13 @@ public class HandEndpointTests : IClassFixture<CustomWebApplicationFactory>
     }
 
     [Fact]
-    public async Task GetHand_MissingDecklistNameParameter_ReturnsBadRequest()
+    public async Task GetHand_WithAuthentication_MissingDecklistNameParameter_ReturnsBadRequest()
     {
+        // Arrange
+        var authenticatedClient = await _factory.CreateAuthenticatedClientAsync();
+
         // Act
-        var response = await _client.GetAsync("/hand");
+        var response = await authenticatedClient.GetAsync("/hand");
 
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -63,23 +84,29 @@ public class HandEndpointTests : IClassFixture<CustomWebApplicationFactory>
     [InlineData("")]
     [InlineData("   ")]
     [InlineData("\t")]
-    public async Task GetHand_EmptyOrWhitespaceDecklistName_ReturnsBadRequest(string decklistName)
+    public async Task GetHand_WithAuthentication_EmptyOrWhitespaceDecklistName_ReturnsBadRequest(string decklistName)
     {
+        // Arrange
+        var authenticatedClient = await _factory.CreateAuthenticatedClientAsync();
+
         // Act
-        var response = await _client.GetAsync($"/hand?decklistName={Uri.EscapeDataString(decklistName)}");
+        var response = await authenticatedClient.GetAsync($"/hand?decklistName={Uri.EscapeDataString(decklistName)}");
 
         // Assert
         Assert.True(response.StatusCode == HttpStatusCode.BadRequest || response.StatusCode == HttpStatusCode.NotFound);
     }
 
     [Fact]
-    public async Task GetHand_MultipleSequentialRequests_GeneratesUniqueHandData()
+    public async Task GetHand_WithAuthentication_MultipleSequentialRequests_GeneratesUniqueHandData()
     {
+        // Arrange
+        var authenticatedClient = await _factory.CreateAuthenticatedClientAsync();
+
         // Act - Make sequential requests
         var hands = new List<Hand>();
         for (int i = 0; i < 3; i++)
         {
-            var response = await _client.GetAsync("/hand?decklistName=TestDeck");
+            var response = await authenticatedClient.GetAsync("/hand?decklistName=TestDeck");
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
             var hand = await response.Content.ReadFromJsonAsync<Hand>();
@@ -99,13 +126,16 @@ public class HandEndpointTests : IClassFixture<CustomWebApplicationFactory>
     }
 
     [Fact]
-    public async Task GetHand_MultipleRequests_ProducesIndependentRandomness()
+    public async Task GetHand_WithAuthentication_MultipleRequests_ProducesIndependentRandomness()
     {
+        // Arrange
+        var authenticatedClient = await _factory.CreateAuthenticatedClientAsync();
+
         // Act - Generate multiple hands
         var hands = new List<Hand>();
         for (int i = 0; i < 10; i++)
         {
-            var response = await _client.GetAsync("/hand?decklistName=TestDeck");
+            var response = await authenticatedClient.GetAsync("/hand?decklistName=TestDeck");
             var hand = await response.Content.ReadFromJsonAsync<Hand>();
             Assert.NotNull(hand);
             hands.Add(hand);
@@ -119,5 +149,20 @@ public class HandEndpointTests : IClassFixture<CustomWebApplicationFactory>
         // Assert - Should have variety in seat orders
         var uniqueSeatOrders = hands.Select(h => h.SeatOrder).Distinct().Count();
         Assert.True(uniqueSeatOrders > 1, "Should have variety in seat orders");
+    }
+
+    [Fact]
+    public async Task GetHand_AdminUser_CanAccessEndpoint()
+    {
+        // Arrange
+        var authenticatedClient = await _factory.CreateAuthenticatedClientAsync(useAdmin: true);
+
+        // Act
+        var response = await authenticatedClient.GetAsync("/hand?decklistName=TestDeck");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var hand = await response.Content.ReadFromJsonAsync<Hand>();
+        Assert.NotNull(hand);
     }
 }

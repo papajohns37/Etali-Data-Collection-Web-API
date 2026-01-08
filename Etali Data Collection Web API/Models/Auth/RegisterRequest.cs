@@ -9,11 +9,13 @@ namespace Etali_Data_Collection_Web_API.Models.Auth;
 public class RegisterRequest
 {
     /// <summary>
-    /// Email address for the new user.
+    /// Username for the new user.
     /// </summary>
     [Required]
-    [EmailAddress]
-    public required string Email { get; set; }
+    [MinLength(3)]
+    [MaxLength(50)]
+    [RegularExpression(@"^[a-zA-Z0-9\-._]+$", ErrorMessage = "Username can only contain letters, numbers, hyphens, periods, and underscores")]
+    public required string Username { get; set; }
     
     /// <summary>
     /// Password for the new user.

@@ -13,15 +13,17 @@ namespace Etali.Tests.Integration;
 [Trait("Category", "Integration")]
 public class HandEvaluateEndpointTests : IClassFixture<CustomWebApplicationFactory>
 {
+    private readonly CustomWebApplicationFactory _factory;
     private readonly HttpClient _client;
 
     public HandEvaluateEndpointTests(CustomWebApplicationFactory factory)
     {
+        _factory = factory;
         _client = factory.CreateClient();
     }
 
     [Fact]
-    public async Task PostHandEvaluate_ValidEvaluation_ReturnsOk()
+    public async Task PostHandEvaluate_WithoutAuthentication_ReturnsUnauthorized()
     {
         // Arrange
         var uniqueId = Random.Shared.Next(10000, 99999);
@@ -34,11 +36,38 @@ public class HandEvaluateEndpointTests : IClassFixture<CustomWebApplicationFacto
             5,
             1,
             "TestDeck",
-            0.0f
+            0.0f,
+            null
         );
 
         // Act
         var response = await _client.PostAsJsonAsync("/hand/evaluate", evaluation);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PostHandEvaluate_WithAuthentication_ValidEvaluation_ReturnsOk()
+    {
+        // Arrange
+        var authenticatedClient = await _factory.CreateAuthenticatedClientAsync();
+        var uniqueId = Random.Shared.Next(10000, 99999);
+        var evaluation = new EvaluatedHand(
+            uniqueId,
+            CustomWebApplicationFactory.CreateTestCards("Card1", "Card2", "Card3", "Card4", "Card5", "Card6", "Card7"),
+            2,
+            new[] { 6, 5, 4 },
+            true,
+            5,
+            1,
+            "TestDeck",
+            0.0f,
+            null
+        );
+
+        // Act
+        var response = await authenticatedClient.PostAsJsonAsync("/hand/evaluate", evaluation);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -49,22 +78,25 @@ public class HandEvaluateEndpointTests : IClassFixture<CustomWebApplicationFacto
     }
 
     [Fact]
-    public async Task PostHandEvaluate_InvalidJson_ReturnsBadRequest()
+    public async Task PostHandEvaluate_WithAuthentication_InvalidJson_ReturnsBadRequest()
     {
         // Arrange
+        var authenticatedClient = await _factory.CreateAuthenticatedClientAsync();
         var invalidJson = new StringContent("{invalid json}", Encoding.UTF8, "application/json");
 
         // Act
-        var response = await _client.PostAsync("/hand/evaluate", invalidJson);
+        var response = await authenticatedClient.PostAsync("/hand/evaluate", invalidJson);
 
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
-    public async Task PostHandEvaluate_WrongFieldTypes_ReturnsBadRequest()
+    public async Task PostHandEvaluate_WithAuthentication_WrongFieldTypes_ReturnsBadRequest()
     {
-        // Arrange - SeatOrder as string instead of int
+        // Arrange
+        var authenticatedClient = await _factory.CreateAuthenticatedClientAsync();
+        // SeatOrder as string instead of int
         var invalidJson = new StringContent(@"{
             ""id"": 1,
             ""cards"": [""Card1"", ""Card2"", ""Card3"", ""Card4"", ""Card5"", ""Card6"", ""Card7""],
@@ -73,20 +105,22 @@ public class HandEvaluateEndpointTests : IClassFixture<CustomWebApplicationFacto
             ""canCastEtali"": true,
             ""minimumCardsToCastEtali"": 5,
             ""decklistId"": 1,
-            ""decklistName"": ""TestDeck""
+            ""decklistName"": ""TestDeck"",
+            ""lowestGambleOdds"": 0.0
         }", Encoding.UTF8, "application/json");
 
         // Act
-        var response = await _client.PostAsync("/hand/evaluate", invalidJson);
+        var response = await authenticatedClient.PostAsync("/hand/evaluate", invalidJson);
 
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
-    public async Task PostHandEvaluate_EmptyStickersArray_AcceptsRequest()
+    public async Task PostHandEvaluate_WithAuthentication_EmptyStickersArray_AcceptsRequest()
     {
         // Arrange
+        var authenticatedClient = await _factory.CreateAuthenticatedClientAsync();
         var uniqueId = Random.Shared.Next(10000, 99999);
         var evaluation = new EvaluatedHand(
             uniqueId,
@@ -97,20 +131,22 @@ public class HandEvaluateEndpointTests : IClassFixture<CustomWebApplicationFacto
             5,
             1,
             "TestDeck",
-            0.0f
+            0.0f,
+            null
         );
 
         // Act
-        var response = await _client.PostAsJsonAsync("/hand/evaluate", evaluation);
+        var response = await authenticatedClient.PostAsJsonAsync("/hand/evaluate", evaluation);
 
         // Assert
         Assert.True(response.IsSuccessStatusCode);
     }
 
     [Fact]
-    public async Task PostHandEvaluate_CamelCaseJson_DeserializesCorrectly()
+    public async Task PostHandEvaluate_WithAuthentication_CamelCaseJson_DeserializesCorrectly()
     {
-        // Arrange - Using camelCase (ASP.NET Core default)
+        // Arrange
+        var authenticatedClient = await _factory.CreateAuthenticatedClientAsync();
         var uniqueId = Random.Shared.Next(10000, 99999);
         var jsonContent = new StringContent($@"{{
             ""id"": {uniqueId},
@@ -129,20 +165,22 @@ public class HandEvaluateEndpointTests : IClassFixture<CustomWebApplicationFacto
             ""minimumCardsToCastEtali"": 5,
             ""decklistId"": 1,
             ""decklistName"": ""TestDeck"",
-            ""lowestGambleOdds"": 0.5
+            ""lowestGambleOdds"": 0.5,
+            ""createdByUserId"": null
         }}", Encoding.UTF8, "application/json");
 
         // Act
-        var response = await _client.PostAsync("/hand/evaluate", jsonContent);
+        var response = await authenticatedClient.PostAsync("/hand/evaluate", jsonContent);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     [Fact]
-    public async Task PostHandEvaluate_PascalCaseJson_DeserializesCorrectly()
+    public async Task PostHandEvaluate_WithAuthentication_PascalCaseJson_DeserializesCorrectly()
     {
-        // Arrange - Using PascalCase
+        // Arrange
+        var authenticatedClient = await _factory.CreateAuthenticatedClientAsync();
         var uniqueId = Random.Shared.Next(10000, 99999);
         var jsonContent = new StringContent($@"{{
             ""Id"": {uniqueId},
@@ -161,20 +199,22 @@ public class HandEvaluateEndpointTests : IClassFixture<CustomWebApplicationFacto
             ""MinimumCardsToCastEtali"": 5,
             ""DecklistId"": 1,
             ""DecklistName"": ""TestDeck"",
-            ""LowestGambleOdds"": 0.5
+            ""LowestGambleOdds"": 0.5,
+            ""CreatedByUserId"": null
         }}", Encoding.UTF8, "application/json");
 
         // Act
-        var response = await _client.PostAsync("/hand/evaluate", jsonContent);
+        var response = await authenticatedClient.PostAsync("/hand/evaluate", jsonContent);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     [Fact]
-    public async Task PostHandEvaluate_LargePayload_HandlesSuccessfully()
+    public async Task PostHandEvaluate_WithAuthentication_LargePayload_HandlesSuccessfully()
     {
-        // Arrange - Very long card names
+        // Arrange
+        var authenticatedClient = await _factory.CreateAuthenticatedClientAsync();
         var uniqueId = Random.Shared.Next(10000, 99999);
         var longCardNames = Enumerable.Range(1, 7)
             .Select(i => new string('A', 100) + $" Card {i}")
@@ -189,20 +229,22 @@ public class HandEvaluateEndpointTests : IClassFixture<CustomWebApplicationFacto
             5,
             1,
             "TestDeck",
-            0.0f
+            0.0f,
+            null
         );
 
         // Act
-        var response = await _client.PostAsJsonAsync("/hand/evaluate", evaluation);
+        var response = await authenticatedClient.PostAsJsonAsync("/hand/evaluate", evaluation);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     [Fact]
-    public async Task PostHandEvaluate_SuccessResponse_ReturnsConsistentFormat()
+    public async Task PostHandEvaluate_WithAuthentication_SuccessResponse_ReturnsConsistentFormat()
     {
         // Arrange
+        var authenticatedClient = await _factory.CreateAuthenticatedClientAsync();
         var uniqueId = Random.Shared.Next(10000, 99999);
         var evaluation = new EvaluatedHand(
             uniqueId,
@@ -213,11 +255,12 @@ public class HandEvaluateEndpointTests : IClassFixture<CustomWebApplicationFacto
             5,
             1,
             "TestDeck",
-            0.0f
+            0.0f,
+            null
         );
 
         // Act
-        var response = await _client.PostAsJsonAsync("/hand/evaluate", evaluation);
+        var response = await authenticatedClient.PostAsJsonAsync("/hand/evaluate", evaluation);
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -226,5 +269,31 @@ public class HandEvaluateEndpointTests : IClassFixture<CustomWebApplicationFacto
         Assert.True(result.TryGetProperty("message", out var message));
         Assert.True(result.TryGetProperty("handId", out var handId));
         Assert.Equal(uniqueId, handId.GetInt32());
+    }
+
+    [Fact]
+    public async Task PostHandEvaluate_AdminUser_CanAccessEndpoint()
+    {
+        // Arrange
+        var authenticatedClient = await _factory.CreateAuthenticatedClientAsync(useAdmin: true);
+        var uniqueId = Random.Shared.Next(10000, 99999);
+        var evaluation = new EvaluatedHand(
+            uniqueId,
+            CustomWebApplicationFactory.CreateTestCards("Card1", "Card2", "Card3", "Card4", "Card5", "Card6", "Card7"),
+            2,
+            new[] { 6, 5, 4 },
+            true,
+            5,
+            1,
+            "TestDeck",
+            0.0f,
+            null
+        );
+
+        // Act
+        var response = await authenticatedClient.PostAsJsonAsync("/hand/evaluate", evaluation);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 }

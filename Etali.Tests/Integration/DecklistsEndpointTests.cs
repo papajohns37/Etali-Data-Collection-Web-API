@@ -12,15 +12,20 @@ namespace Etali.Tests.Integration;
 public class DecklistsEndpointTests : IClassFixture<CustomWebApplicationFactory>
 {
     private readonly HttpClient _client;
+    private readonly CustomWebApplicationFactory _factory;
 
     public DecklistsEndpointTests(CustomWebApplicationFactory factory)
     {
+        _factory = factory;
         _client = factory.CreateClient();
     }
 
     [Fact]
     public async Task GetDecklists_ReturnsOkWithList()
     {
+        // Arrange - Ensure database is seeded
+        await _factory.CreateAuthenticatedClientAsync(); // This seeds the database
+        
         // Act
         var response = await _client.GetAsync("/decklists");
 
@@ -36,6 +41,9 @@ public class DecklistsEndpointTests : IClassFixture<CustomWebApplicationFactory>
     [Fact]
     public async Task GetDecklists_ReturnsJsonContentType()
     {
+        // Arrange - Ensure database is seeded
+        await _factory.CreateAuthenticatedClientAsync();
+        
         // Act
         var response = await _client.GetAsync("/decklists");
 
@@ -47,6 +55,9 @@ public class DecklistsEndpointTests : IClassFixture<CustomWebApplicationFactory>
     [Fact]
     public async Task GetDecklists_ReturnsConsistentOrdering()
     {
+        // Arrange - Ensure database is seeded
+        await _factory.CreateAuthenticatedClientAsync();
+        
         // Act - Call multiple times
         var response1 = await _client.GetAsync("/decklists");
         var decklists1 = await response1.Content.ReadFromJsonAsync<List<Decklist>>();

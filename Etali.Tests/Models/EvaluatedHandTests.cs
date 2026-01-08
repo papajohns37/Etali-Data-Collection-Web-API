@@ -14,7 +14,7 @@ public class EvaluatedHandTests
 
         // Act
         var evaluatedHand = new EvaluatedHand(
-            1, cards, 2, stickers, true, 5, 10, "TestDeck", 0.75f);
+            1, cards, 2, stickers, true, 5, 10, "TestDeck", 0.75f, null);
 
         // Assert
         Assert.Equal(1, evaluatedHand.Id);
@@ -26,6 +26,7 @@ public class EvaluatedHandTests
         Assert.Equal(10, evaluatedHand.DecklistId);
         Assert.Equal("TestDeck", evaluatedHand.DecklistName);
         Assert.Equal(0.75f, evaluatedHand.LowestGambleOdds);
+        Assert.Null(evaluatedHand.CreatedByUserId);
     }
 
     [Fact]
@@ -34,9 +35,9 @@ public class EvaluatedHandTests
         // Arrange
         var cards = CreateTestCards(7);
         var stickers = new[] { 6, 5, 4 };
-        var hand1 = new EvaluatedHand(1, cards, 2, stickers, true, 5, 10, "TestDeck", 0.75f);
-        var hand2 = new EvaluatedHand(1, cards, 2, stickers, true, 5, 10, "TestDeck", 0.75f);
-        var hand3 = new EvaluatedHand(1, cards, 2, stickers, false, 8, 10, "TestDeck", 0.75f);
+        var hand1 = new EvaluatedHand(1, cards, 2, stickers, true, 5, 10, "TestDeck", 0.75f, null);
+        var hand2 = new EvaluatedHand(1, cards, 2, stickers, true, 5, 10, "TestDeck", 0.75f, null);
+        var hand3 = new EvaluatedHand(1, cards, 2, stickers, false, 8, 10, "TestDeck", 0.75f, null);
 
         // Assert
         Assert.Equal(hand1, hand2);
@@ -52,7 +53,7 @@ public class EvaluatedHandTests
 
         // Act
         var evaluatedHand = new EvaluatedHand(
-            1, cards, 2, stickers, false, 8, 10, "TestDeck", 0.0f);
+            1, cards, 2, stickers, false, 8, 10, "TestDeck", 0.0f, null);
 
         // Assert
         Assert.False(evaluatedHand.CanCastEtali);
@@ -68,7 +69,7 @@ public class EvaluatedHandTests
 
         // Act
         var evaluatedHand = new EvaluatedHand(
-            1, cards, 2, stickers, true, 3, 10, "TestDeck", 0.5f);
+            1, cards, 2, stickers, true, 3, 10, "TestDeck", 0.5f, null);
 
         // Assert
         Assert.True(evaluatedHand.CanCastEtali);
@@ -81,10 +82,10 @@ public class EvaluatedHandTests
         // Arrange
         var cards = CreateTestCards(7);
         var stickers = new[] { 6, 5, 4 };
-        var hand = new EvaluatedHand(1, cards, 2, stickers, true, 5, 10, "TestDeck", 0.8f);
+        var hand = new EvaluatedHand(1, cards, 2, stickers, true, 5, 10, "TestDeck", 0.8f, "user123");
 
         // Act
-        var (id, handCards, seatOrder, handStickers, canCast, minCards, decklistId, decklistName, lowestGambleOdds) = hand;
+        var (id, handCards, seatOrder, handStickers, canCast, minCards, decklistId, decklistName, lowestGambleOdds, createdByUserId) = hand;
 
         // Assert
         Assert.Equal(1, id);
@@ -96,6 +97,7 @@ public class EvaluatedHandTests
         Assert.Equal(10, decklistId);
         Assert.Equal("TestDeck", decklistName);
         Assert.Equal(0.8f, lowestGambleOdds);
+        Assert.Equal("user123", createdByUserId);
     }
 
     private Card[] CreateTestCards(int count)

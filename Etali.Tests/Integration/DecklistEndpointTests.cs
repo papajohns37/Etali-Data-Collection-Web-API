@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using Etali_Data_Collection_Web_API.Models;
 using Etali_Data_Collection_Web_API.Services;
+using Etali.Tests.Integration.TestHelpers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Moq;
@@ -23,23 +24,38 @@ public class DecklistEndpointTests : IClassFixture<CustomWebApplicationFactory>
     }
 
     [Fact]
+    public async Task PostDecklist_WithoutAuthentication_ReturnsUnauthorized()
+    {
+        // Arrange
+        var client = _factory.CreateClient();
+
+        // Act
+        var response = await client.PostAsync("/decklist?link=https://test.com&name=NewDeck", null);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
     public async Task PostDecklist_WithMockService_ReturnsOk()
     {
-        // Arrange - Create a factory with mocked DecklistAddingService
+        // Arrange - Ensure database is seeded first
+        await _factory.CreateAuthenticatedClientAsync(); // This seeds the database
+        
+        // Create a factory with mocked DecklistAddingService
         var mockService = new Mock<IDecklistAddingService>();
         mockService.Setup(s => s.AddDecklist(It.IsAny<string>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
-        var factory = _factory.WithWebHostBuilder(builder =>
+        var factory = _factory.WithMockedServices(services =>
         {
-            builder.ConfigureServices(services =>
-            {
-                services.RemoveAll<IDecklistAddingService>();
-                services.AddScoped(_ => mockService.Object);
-            });
+            services.RemoveAll<IDecklistAddingService>();
+            services.AddScoped(_ => mockService.Object);
         });
 
+        // Create authenticated client from modified factory
         var client = factory.CreateClient();
+        await client.AuthenticateAs(_factory, CustomWebApplicationFactory.TestUserEmail);
 
         // Act
         var response = await client.PostAsync("/decklist?link=https://test.com&name=NewDeck", null);
@@ -57,7 +73,7 @@ public class DecklistEndpointTests : IClassFixture<CustomWebApplicationFactory>
     public async Task PostDecklist_MissingParameters_ReturnsBadRequest()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = await _factory.CreateAuthenticatedClientAsync();
 
         // Act
         var response = await client.PostAsync("/decklist", null);
@@ -69,21 +85,23 @@ public class DecklistEndpointTests : IClassFixture<CustomWebApplicationFactory>
     [Fact]
     public async Task PostDecklist_ServiceThrowsException_ReturnsInternalServerError()
     {
-        // Arrange - Mock service that throws
+        // Arrange - Ensure database is seeded first
+        await _factory.CreateAuthenticatedClientAsync(); // This seeds the database
+        
+        // Mock service that throws
         var mockService = new Mock<IDecklistAddingService>();
         mockService.Setup(s => s.AddDecklist(It.IsAny<string>(), It.IsAny<string>()))
             .ThrowsAsync(new InvalidOperationException("Moxfield error"));
 
-        var factory = _factory.WithWebHostBuilder(builder =>
+        var factory = _factory.WithMockedServices(services =>
         {
-            builder.ConfigureServices(services =>
-            {
-                services.RemoveAll<IDecklistAddingService>();
-                services.AddScoped(_ => mockService.Object);
-            });
+            services.RemoveAll<IDecklistAddingService>();
+            services.AddScoped(_ => mockService.Object);
         });
 
+        // Create authenticated client from modified factory
         var client = factory.CreateClient();
+        await client.AuthenticateAs(_factory, CustomWebApplicationFactory.TestUserEmail);
 
         // Act
         var response = await client.PostAsync("/decklist?link=https://test.com&name=TestDeck", null);
@@ -96,7 +114,7 @@ public class DecklistEndpointTests : IClassFixture<CustomWebApplicationFactory>
     public async Task PostDecklist_MissingLinkParameter_ReturnsBadRequest()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = await _factory.CreateAuthenticatedClientAsync();
 
         // Act
         var response = await client.PostAsync("/decklist?name=TestDeck", null);
@@ -109,7 +127,7 @@ public class DecklistEndpointTests : IClassFixture<CustomWebApplicationFactory>
     public async Task PostDecklist_MissingNameParameter_ReturnsBadRequest()
     {
         // Arrange
-        var client = _factory.CreateClient();
+        var client = await _factory.CreateAuthenticatedClientAsync();
 
         // Act
         var response = await client.PostAsync("/decklist?link=https://test.com", null);

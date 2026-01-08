@@ -21,7 +21,7 @@ public static class AuthEndpoints
             .WithOpenApi(operation => new(operation)
             {
                 Summary = "Authenticate user and receive JWT token",
-                Description = @"Authenticates a user with email and password, returning a JWT bearer token.
+                Description = @"Authenticates a user with username and password, returning a JWT bearer token.
 
 The token should be included in subsequent requests using the Authorization header:
 `Authorization: Bearer {token}`
@@ -42,13 +42,13 @@ Returns:
             .WithOpenApi(operation => new(operation)
             {
                 Summary = "Register a new user (Admin only)",
-                Description = @"Creates a new user account with the specified email and password.
+                Description = @"Creates a new user account with the specified username and password.
 
 Only administrators can register new users. This endpoint requires authentication
 with a valid JWT token that includes the 'Admin' role.
 
 Request body:
-- email: Valid email address
+- username: Unique username (3-50 characters, letters, numbers, hyphens, periods, underscores)
 - password: Strong password (min 6 characters, requires uppercase, lowercase, digit, special character)
 - confirmPassword: Must match password
 - isAdmin: true to assign Admin role, false for Contributor role (default: false)
@@ -74,7 +74,7 @@ Returns:
         LoginRequest request,
         IAuthService authService)
     {
-        var response = await authService.LoginAsync(request.Email, request.Password);
+        var response = await authService.LoginAsync(request.Username, request.Password);
 
         if (response == null)
         {
@@ -88,8 +88,19 @@ Returns:
         RegisterRequest request,
         IAuthService authService)
     {
+        // Validate password confirmation matches
+        if (request.Password != request.ConfirmPassword)
+        {
+            return TypedResults.BadRequest(new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Validation failed",
+                Detail = "Password and confirmation password do not match."
+            });
+        }
+
         var (success, errors) = await authService.RegisterUserAsync(
-            request.Email,
+            request.Username,
             request.Password,
             request.IsAdmin);
 
@@ -106,7 +117,7 @@ Returns:
         return TypedResults.Ok<object>(new
         {
             message = "User registered successfully",
-            email = request.Email,
+            username = request.Username,
             role = request.IsAdmin ? "Admin" : "Contributor"
         });
     }
