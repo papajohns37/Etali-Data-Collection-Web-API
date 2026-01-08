@@ -14,27 +14,27 @@ public static class HttpClientAuthExtensions
     /// </summary>
     /// <param name="client">The HttpClient to authenticate.</param>
     /// <param name="factory">The factory to get user manager from.</param>
-    /// <param name="email">The email of the user to authenticate as.</param>
+    /// <param name="username">The username of the user to authenticate as.</param>
     public static async Task AuthenticateAs(
         this HttpClient client, 
         CustomWebApplicationFactory factory, 
-        string email)
+        string username)
     {
         using var scope = factory.Services.CreateScope();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-        var user = await userManager.FindByEmailAsync(email);
+        var user = await userManager.FindByNameAsync(username);
         
         if (user == null)
         {
-            throw new InvalidOperationException($"User {email} not found. Ensure database is seeded.");
+            throw new InvalidOperationException($"User {username} not found. Ensure database is seeded.");
         }
         
         var roles = await userManager.GetRolesAsync(user);
         var rolesString = string.Join(",", roles);
         
-        // Set test auth header: "UserId:Email:Roles"
+        // Set test auth header: "UserId:Username:Roles"
         client.DefaultRequestHeaders.Remove("X-Test-Auth");
-        client.DefaultRequestHeaders.Add("X-Test-Auth", $"{user.Id}:{email}:{rolesString}");
+        client.DefaultRequestHeaders.Add("X-Test-Auth", $"{user.Id}:{username}:{rolesString}");
     }
     
     /// <summary>

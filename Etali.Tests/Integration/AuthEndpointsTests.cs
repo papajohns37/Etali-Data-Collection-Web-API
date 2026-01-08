@@ -29,7 +29,7 @@ public class AuthEndpointsTests : IClassFixture<CustomWebApplicationFactory>
         // Arrange
         var loginRequest = new
         {
-            email = CustomWebApplicationFactory.TestUserEmail,
+            username = CustomWebApplicationFactory.TestUsername,
             password = CustomWebApplicationFactory.TestUserPassword
         };
 
@@ -43,7 +43,7 @@ public class AuthEndpointsTests : IClassFixture<CustomWebApplicationFactory>
         Assert.NotNull(loginResponse);
         Assert.NotNull(loginResponse.Token);
         Assert.NotEmpty(loginResponse.Token);
-        Assert.Equal(CustomWebApplicationFactory.TestUserEmail, loginResponse.Email);
+        Assert.Equal(CustomWebApplicationFactory.TestUsername, loginResponse.Username);
         Assert.Contains("Contributor", loginResponse.Roles);
         Assert.True(loginResponse.Expiration > DateTime.UtcNow);
     }
@@ -54,7 +54,7 @@ public class AuthEndpointsTests : IClassFixture<CustomWebApplicationFactory>
         // Arrange
         var loginRequest = new
         {
-            email = CustomWebApplicationFactory.TestAdminEmail,
+            username = CustomWebApplicationFactory.TestAdminUsername,
             password = CustomWebApplicationFactory.TestAdminPassword
         };
 
@@ -70,12 +70,12 @@ public class AuthEndpointsTests : IClassFixture<CustomWebApplicationFactory>
     }
 
     [Fact]
-    public async Task Login_InvalidEmail_ReturnsUnauthorized()
+    public async Task Login_InvalidUsername_ReturnsUnauthorized()
     {
         // Arrange
         var loginRequest = new
         {
-            email = "nonexistent@example.com",
+            username = "nonexistentuser",
             password = "SomePassword123!"
         };
 
@@ -92,7 +92,7 @@ public class AuthEndpointsTests : IClassFixture<CustomWebApplicationFactory>
         // Arrange
         var loginRequest = new
         {
-            email = CustomWebApplicationFactory.TestUserEmail,
+            username = CustomWebApplicationFactory.TestUsername,
             password = "WrongPassword123!"
         };
 
@@ -104,7 +104,7 @@ public class AuthEndpointsTests : IClassFixture<CustomWebApplicationFactory>
     }
 
     [Fact]
-    public async Task Login_MissingEmail_ReturnsBadRequest()
+    public async Task Login_MissingUsername_ReturnsBadRequest()
     {
         // Arrange
         var loginRequest = new
@@ -129,7 +129,7 @@ public class AuthEndpointsTests : IClassFixture<CustomWebApplicationFactory>
         // Arrange
         var loginRequest = new
         {
-            email = "test@example.com"
+            username = "testuser"
         };
 
         // Act
@@ -149,7 +149,7 @@ public class AuthEndpointsTests : IClassFixture<CustomWebApplicationFactory>
         // Arrange
         var loginRequest = new
         {
-            email = "",
+            username = "",
             password = ""
         };
 
@@ -171,7 +171,7 @@ public class AuthEndpointsTests : IClassFixture<CustomWebApplicationFactory>
         // Arrange
         var registerRequest = new
         {
-            email = "newuser@example.com",
+            username = "newuser",
             password = "NewUser123!",
             confirmPassword = "NewUser123!",
             isAdmin = false
@@ -192,7 +192,7 @@ public class AuthEndpointsTests : IClassFixture<CustomWebApplicationFactory>
         
         var registerRequest = new
         {
-            email = "newuser@example.com",
+            username = "newuser",
             password = "NewUser123!",
             confirmPassword = "NewUser123!",
             isAdmin = false
@@ -211,10 +211,10 @@ public class AuthEndpointsTests : IClassFixture<CustomWebApplicationFactory>
         // Arrange - Login as admin
         var adminClient = await _factory.CreateAuthenticatedClientAsync(useAdmin: true);
         
-        var uniqueEmail = $"newuser{Guid.NewGuid():N}@example.com";
+        var uniqueUsername = $"newuser{Guid.NewGuid():N}";
         var registerRequest = new
         {
-            email = uniqueEmail,
+            username = uniqueUsername,
             password = "NewUser123!",
             confirmPassword = "NewUser123!",
             isAdmin = false
@@ -228,7 +228,7 @@ public class AuthEndpointsTests : IClassFixture<CustomWebApplicationFactory>
 
         var result = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("User registered successfully", result.GetProperty("message").GetString());
-        Assert.Equal(uniqueEmail, result.GetProperty("email").GetString());
+        Assert.Equal(uniqueUsername, result.GetProperty("username").GetString());
         Assert.Equal("Contributor", result.GetProperty("role").GetString());
     }
 
@@ -238,10 +238,10 @@ public class AuthEndpointsTests : IClassFixture<CustomWebApplicationFactory>
         // Arrange - Login as admin
         var adminClient = await _factory.CreateAuthenticatedClientAsync(useAdmin: true);
         
-        var uniqueEmail = $"newadmin{Guid.NewGuid():N}@example.com";
+        var uniqueUsername = $"newadmin{Guid.NewGuid():N}";
         var registerRequest = new
         {
-            email = uniqueEmail,
+            username = uniqueUsername,
             password = "NewAdmin123!",
             confirmPassword = "NewAdmin123!",
             isAdmin = true
@@ -258,14 +258,14 @@ public class AuthEndpointsTests : IClassFixture<CustomWebApplicationFactory>
     }
 
     [Fact]
-    public async Task Register_WithAdminRole_DuplicateEmail_ReturnsBadRequest()
+    public async Task Register_WithAdminRole_DuplicateUsername_ReturnsBadRequest()
     {
         // Arrange - Login as admin
         var adminClient = await _factory.CreateAuthenticatedClientAsync(useAdmin: true);
         
         var registerRequest = new
         {
-            email = CustomWebApplicationFactory.TestUserEmail, // Already exists
+            username = CustomWebApplicationFactory.TestUsername, // Already exists
             password = "NewUser123!",
             confirmPassword = "NewUser123!",
             isAdmin = false
@@ -286,7 +286,7 @@ public class AuthEndpointsTests : IClassFixture<CustomWebApplicationFactory>
         
         var registerRequest = new
         {
-            email = "newuser@example.com",
+            username = "newuser",
             password = "NewUser123!",
             confirmPassword = "DifferentPassword123!",
             isAdmin = false
@@ -307,7 +307,7 @@ public class AuthEndpointsTests : IClassFixture<CustomWebApplicationFactory>
         
         var registerRequest = new
         {
-            email = "newuser@example.com",
+            username = "newuser",
             password = "weak", // Too short, missing requirements
             confirmPassword = "weak",
             isAdmin = false
@@ -321,14 +321,14 @@ public class AuthEndpointsTests : IClassFixture<CustomWebApplicationFactory>
     }
 
     [Fact]
-    public async Task Register_WithAdminRole_InvalidEmail_ReturnsBadRequest()
+    public async Task Register_WithAdminRole_InvalidUsername_ReturnsBadRequest()
     {
         // Arrange - Login as admin
         var adminClient = await _factory.CreateAuthenticatedClientAsync(useAdmin: true);
         
         var registerRequest = new
         {
-            email = "notanemail",
+            username = "a", // Too short (min 3)
             password = "NewUser123!",
             confirmPassword = "NewUser123!",
             isAdmin = false
@@ -416,7 +416,7 @@ public class AuthEndpointsTests : IClassFixture<CustomWebApplicationFactory>
         
         var registerRequest = new
         {
-            email = "test@example.com",
+            username = "testuser123",
             password = "Test123!",
             confirmPassword = "Test123!",
             isAdmin = false

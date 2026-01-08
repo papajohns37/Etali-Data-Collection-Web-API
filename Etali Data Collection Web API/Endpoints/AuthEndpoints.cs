@@ -88,6 +88,20 @@ Returns:
         RegisterRequest request,
         IAuthService authService)
     {
+        // Validate model annotations
+        var validationResults = new List<System.ComponentModel.DataAnnotations.ValidationResult>();
+        var validationContext = new System.ComponentModel.DataAnnotations.ValidationContext(request);
+        if (!System.ComponentModel.DataAnnotations.Validator.TryValidateObject(request, validationContext, validationResults, true))
+        {
+            var validationErrors = validationResults.Select(vr => vr.ErrorMessage ?? "Validation error").ToList();
+            return TypedResults.BadRequest(new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Validation failed",
+                Detail = string.Join("; ", validationErrors)
+            });
+        }
+
         // Validate password confirmation matches
         if (request.Password != request.ConfirmPassword)
         {

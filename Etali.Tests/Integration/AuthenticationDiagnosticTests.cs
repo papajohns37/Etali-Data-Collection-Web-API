@@ -48,15 +48,15 @@ public class AuthenticationDiagnosticTests : IClassFixture<CustomWebApplicationF
         using (var scope = scopeFactory.CreateScope())
         {
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-            var user = await userManager.FindByEmailAsync(CustomWebApplicationFactory.TestUserEmail);
+            var user = await userManager.FindByNameAsync(CustomWebApplicationFactory.TestUsername);
             
             if (user == null)
             {
-                _output.WriteLine($"ERROR: User {CustomWebApplicationFactory.TestUserEmail} not found in database!");
+                _output.WriteLine($"ERROR: User {CustomWebApplicationFactory.TestUsername} not found in database!");
             }
             else
             {
-                _output.WriteLine($"SUCCESS: User {CustomWebApplicationFactory.TestUserEmail} exists in database");
+                _output.WriteLine($"SUCCESS: User {CustomWebApplicationFactory.TestUsername} exists in database");
                 _output.WriteLine($"User ID: {user.Id}");
                 _output.WriteLine($"Email Confirmed: {user.EmailConfirmed}");
                 
@@ -71,12 +71,12 @@ public class AuthenticationDiagnosticTests : IClassFixture<CustomWebApplicationF
 
         var loginRequest = new
         {
-            email = CustomWebApplicationFactory.TestUserEmail,
+            username = CustomWebApplicationFactory.TestUsername,
             password = CustomWebApplicationFactory.TestUserPassword
         };
 
         // Act
-        _output.WriteLine($"Attempting login with: {CustomWebApplicationFactory.TestUserEmail}");
+        _output.WriteLine($"Attempting login with: {CustomWebApplicationFactory.TestUsername}");
         var response = await _client.PostAsJsonAsync("/auth/login", loginRequest);
         
         // Log response
@@ -126,11 +126,11 @@ public class AuthenticationDiagnosticTests : IClassFixture<CustomWebApplicationF
         var authHeader = testAuthHeaders.First();
         _output.WriteLine($"X-Test-Auth header: {authHeader}");
         
-        // Verify format: "UserId:Email:Roles"
+        // Verify format: "UserId:Username:Roles"
         var parts = authHeader.Split(':');
-        Assert.True(parts.Length >= 3, "Auth header should have format UserId:Email:Roles");
+        Assert.True(parts.Length >= 3, "Auth header should have format UserId:Username:Roles");
         Assert.NotEmpty(parts[0]); // UserId
-        Assert.Contains("@", parts[1]); // Email
+        Assert.NotEmpty(parts[1]); // Username
         Assert.NotEmpty(parts[2]); // Roles
     }
 }

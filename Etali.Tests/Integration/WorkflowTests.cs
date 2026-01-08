@@ -122,7 +122,7 @@ public class WorkflowTests : IClassFixture<CustomWebApplicationFactory>
         // 3. Admin can also register new users
         var registerRequest = new
         {
-            email = $"newuser{Guid.NewGuid():N}@example.com",
+            username = $"newuser{Guid.NewGuid():N}",
             password = "NewUser123!",
             confirmPassword = "NewUser123!",
             isAdmin = false

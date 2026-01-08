@@ -55,7 +55,7 @@ public class DecklistEndpointTests : IClassFixture<CustomWebApplicationFactory>
 
         // Create authenticated client from modified factory
         var client = factory.CreateClient();
-        await client.AuthenticateAs(_factory, CustomWebApplicationFactory.TestUserEmail);
+        await client.AuthenticateAs(_factory, CustomWebApplicationFactory.TestUsername);
 
         // Act
         var response = await client.PostAsync("/decklist?link=https://test.com&name=NewDeck", null);
@@ -101,7 +101,7 @@ public class DecklistEndpointTests : IClassFixture<CustomWebApplicationFactory>
 
         // Create authenticated client from modified factory
         var client = factory.CreateClient();
-        await client.AuthenticateAs(_factory, CustomWebApplicationFactory.TestUserEmail);
+        await client.AuthenticateAs(_factory, CustomWebApplicationFactory.TestUsername);
 
         // Act
         var response = await client.PostAsync("/decklist?link=https://test.com&name=TestDeck", null);
