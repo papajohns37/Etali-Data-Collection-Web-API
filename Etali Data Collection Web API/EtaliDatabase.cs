@@ -12,6 +12,7 @@ public class EtaliDatabase(DbContextOptions<EtaliDatabase> options) : IdentityDb
     public DbSet<Decklist> Decklists { get; set; } = null!;
     public DbSet<DeckComparison> DeckComparisons { get; set; } = null!;
     public DbSet<ComparisonEvaluatedHand> ComparisonEvaluatedHands { get; set; } = null!;
+    public DbSet<OldEvaluatedHand> OldEvaluatedHands { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -272,6 +273,64 @@ public class EtaliDatabase(DbContextOptions<EtaliDatabase> options) : IdentityDb
         {
             entity.Property(u => u.CreatedAt)
                 .HasColumnType("timestamp with time zone");
+        });
+
+        // Configure OldEvaluatedHand
+        modelBuilder.Entity<OldEvaluatedHand>(entity =>
+        {
+            entity.HasKey(oeh => oeh.Id);
+
+            entity.Property(oeh => oeh.DecklistName)
+                .HasMaxLength(500)
+                .IsRequired();
+
+            entity.Property(oeh => oeh.User)
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.Property(oeh => oeh.Card1)
+                .HasMaxLength(200);
+
+            entity.Property(oeh => oeh.Card2)
+                .HasMaxLength(200);
+
+            entity.Property(oeh => oeh.Card3)
+                .HasMaxLength(200);
+
+            entity.Property(oeh => oeh.Card4)
+                .HasMaxLength(200);
+
+            entity.Property(oeh => oeh.Card5)
+                .HasMaxLength(200);
+
+            entity.Property(oeh => oeh.Card6)
+                .HasMaxLength(200);
+
+            entity.Property(oeh => oeh.Card7)
+                .HasMaxLength(200);
+
+            entity.Property(oeh => oeh.ImportedAt)
+                .HasColumnType("timestamp with time zone");
+
+            // Indexes for performance
+            entity.HasIndex(oeh => oeh.DecklistName)
+                .HasDatabaseName("ix_old_evaluated_hands_decklist_name");
+
+            entity.HasIndex(oeh => oeh.DecklistId)
+                .HasDatabaseName("ix_old_evaluated_hands_decklist_id");
+
+            entity.HasIndex(oeh => oeh.User)
+                .HasDatabaseName("ix_old_evaluated_hands_user");
+
+            // Optional foreign key to Decklist
+            entity.HasOne<Decklist>()
+                .WithMany()
+                .HasForeignKey(oeh => oeh.DecklistId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Check constraints
+            entity.HasCheckConstraint("ck_old_evaluated_hands_min_cards", 
+                "minimum_cards_to_cast_etali >= 1 AND minimum_cards_to_cast_etali <= 8");
         });
     }
 }

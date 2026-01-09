@@ -81,6 +81,8 @@ builder.Services.AddScoped<IDecklistAddingService, DecklistAddingService>();
 builder.Services.AddScoped<IStatisticsService, StatisticsService>();
 builder.Services.AddScoped<IDeckComparisonService, DeckComparisonService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ICsvMigrationService, CsvMigrationService>();
+builder.Services.AddScoped<IOldHandMigrationService, OldHandMigrationService>();
 
 // Get database configuration
 var dbConfig = builder.Configuration.GetSection("Database").Get<DatabaseConfiguration>() 
@@ -304,6 +306,7 @@ app.MapHandEndpoints();
 app.MapDecklistEndpoints();
 app.MapStatisticsEndpoints();
 app.MapDeckComparisonEndpoints();
+app.MapMigrationEndpoints();
 
 app.Run();
 
@@ -383,6 +386,32 @@ static async Task SeedDatabaseAsync(IServiceProvider services)
         {
             await roleManager.CreateAsync(new IdentityRole(role));
             logger.LogInformation("Created role: {Role}", role);
+        }
+    }
+
+    // Create system user for Excel/CSV imports
+    const string excelImporterUsername = "excel_importer";
+    var excelImporter = await userManager.FindByNameAsync(excelImporterUsername);
+    if (excelImporter == null)
+    {
+        var systemUser = new ApplicationUser
+        {
+            UserName = excelImporterUsername,
+            Email = null,
+            EmailConfirmed = false,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        // Create without password (system user cannot login)
+        var result = await userManager.CreateAsync(systemUser);
+        if (result.Succeeded)
+        {
+            logger.LogInformation("Created system user: {Username} (for migrated data)", excelImporterUsername);
+        }
+        else
+        {
+            logger.LogError("Failed to create system user {Username}: {Errors}", 
+                excelImporterUsername, string.Join(", ", result.Errors.Select(e => e.Description)));
         }
     }
 

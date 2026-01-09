@@ -6,14 +6,105 @@ namespace Etali_Data_Collection_Web_API.Services;
 
 /// <summary>
 /// Service responsible for generating random hands of cards with associated game metadata.
+/// Also serves old hands from the migration database for user evaluation.
 /// </summary>
-public class HandGenerationService(GameConfiguration configuration, EtaliDatabase database) : IHandGenerationService
+public class HandGenerationService(GameConfiguration configuration, EtaliDatabase database, ILogger<HandGenerationService> logger) : IHandGenerationService
 {
     /// <inheritdoc/>
     public Hand GenerateHand(int handId, string decklistName)
     {
+        // First, check if there are any old hands that need evaluation for this decklist
+        var oldHand = database.OldEvaluatedHands
+            .FirstOrDefault(h => h.DecklistName.ToLower() == decklistName.ToLower());
+
+        if (oldHand != null)
+        {
+            logger.LogInformation(
+                "Serving old hand {OldHandId} from '{DecklistName}' for evaluation (new hand ID: {NewHandId})",
+                oldHand.Id, oldHand.DecklistName, handId);
+            
+            // Remove the old hand immediately so it won't be served again
+            database.OldEvaluatedHands.Remove(oldHand);
+            database.SaveChanges();
+            
+            logger.LogDebug("Removed old hand {OldHandId} from old_evaluated_hands after serving", oldHand.Id);
+            
+            return ConvertOldHandToHand(oldHand, handId);
+        }
+
+        // No old hands available, generate a new random hand
+        logger.LogDebug("No old hands available for '{DecklistName}', generating new random hand", decklistName);
+        return GenerateRandomHand(handId, decklistName);
+    }
+
+    /// <summary>
+    /// Converts an old evaluated hand to a Hand for user evaluation.
+    /// </summary>
+    private Hand ConvertOldHandToHand(OldEvaluatedHand oldHand, int newHandId)
+    {
+        // Look up the decklist to get card types
+        var decklist = database.Decklists.Find(oldHand.DecklistId);
+        if (decklist == null)
+        {
+            throw new InvalidOperationException(
+                $"Decklist ID {oldHand.DecklistId} not found for old hand {oldHand.Id}");
+        }
+
+        // Convert card names to Card objects
+        var cards = new Card[7];
+        var cardNames = new[] 
+        { 
+            oldHand.Card1, oldHand.Card2, oldHand.Card3, oldHand.Card4,
+            oldHand.Card5, oldHand.Card6, oldHand.Card7 
+        };
+
+        for (int i = 0; i < 7; i++)
+        {
+            var cardName = cardNames[i];
+            if (string.IsNullOrWhiteSpace(cardName))
+            {
+                throw new InvalidOperationException(
+                    $"Old hand {oldHand.Id} has missing card at position {i + 1}");
+            }
+
+            // Find the card in the decklist to get its type
+            var cardFromDecklist = decklist.Cards.FirstOrDefault(
+                c => c.Name.Equals(cardName, StringComparison.OrdinalIgnoreCase));
+            
+            if (cardFromDecklist == null)
+            {
+                logger.LogWarning(
+                    "Card '{CardName}' from old hand {OldHandId} not found in decklist '{DecklistName}', using Unknown type",
+                    cardName, oldHand.Id, decklist.Name);
+                cards[i] = new Card { Name = cardName, Type = "Unknown" };
+            }
+            else
+            {
+                cards[i] = cardFromDecklist;
+            }
+        }
+
+        // Generate random values for fields that weren't tracked in old data
+        var seatOrder = GenerateSeatOrder();
+        var stickers = GenerateStickers();
+        var lowestGambleOdds = GenerateLowestGambleOdds();
+
+        return new Hand(
+            newHandId, 
+            cards, 
+            seatOrder, 
+            stickers, 
+            decklist.Id, 
+            decklist.Name, 
+            lowestGambleOdds);
+    }
+
+    /// <summary>
+    /// Generates a new random hand from the specified decklist.
+    /// </summary>
+    private Hand GenerateRandomHand(int handId, string decklistName)
+    {
         // Look up the decklist by name (case-insensitive)
-        // Use ToLower() which translates better to PostgreSQL than string.Equals with StringComparison
         var lowerName = decklistName.ToLower();
         var decklist = database.Decklists
             .FirstOrDefault(d => d.Name.ToLower() == lowerName);

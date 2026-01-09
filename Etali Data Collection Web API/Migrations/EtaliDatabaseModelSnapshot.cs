@@ -375,6 +375,96 @@ namespace Etali_Data_Collection_Web_API.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Etali_Data_Collection_Web_API.Models.OldEvaluatedHand", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("CanCastEtali")
+                        .HasColumnType("boolean")
+                        .HasColumnName("can_cast_etali");
+
+                    b.Property<string>("Card1")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("card1");
+
+                    b.Property<string>("Card2")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("card2");
+
+                    b.Property<string>("Card3")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("card3");
+
+                    b.Property<string>("Card4")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("card4");
+
+                    b.Property<string>("Card5")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("card5");
+
+                    b.Property<string>("Card6")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("card6");
+
+                    b.Property<string>("Card7")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("card7");
+
+                    b.Property<int?>("DecklistId")
+                        .HasColumnType("integer")
+                        .HasColumnName("decklist_id");
+
+                    b.Property<string>("DecklistName")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("decklist_name");
+
+                    b.Property<DateTime>("ImportedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("imported_at");
+
+                    b.Property<int>("MinimumCardsToCastEtali")
+                        .HasColumnType("integer")
+                        .HasColumnName("minimum_cards_to_cast_etali");
+
+                    b.Property<string>("User")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("user");
+
+                    b.HasKey("Id")
+                        .HasName("p_k_old_evaluated_hands");
+
+                    b.HasIndex("DecklistId")
+                        .HasDatabaseName("ix_old_evaluated_hands_decklist_id");
+
+                    b.HasIndex("DecklistName")
+                        .HasDatabaseName("ix_old_evaluated_hands_decklist_name");
+
+                    b.HasIndex("User")
+                        .HasDatabaseName("ix_old_evaluated_hands_user");
+
+                    b.ToTable("old_evaluated_hands", t =>
+                        {
+                            t.HasCheckConstraint("ck_old_evaluated_hands_min_cards", "minimum_cards_to_cast_etali >= 1 AND minimum_cards_to_cast_etali <= 8");
+                        });
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
                     b.Property<string>("Id")
@@ -590,6 +680,14 @@ namespace Etali_Data_Collection_Web_API.Migrations
                         .HasForeignKey("DecklistId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Etali_Data_Collection_Web_API.Models.OldEvaluatedHand", b =>
+                {
+                    b.HasOne("Etali_Data_Collection_Web_API.Models.Decklist", null)
+                        .WithMany()
+                        .HasForeignKey("DecklistId")
+                        .OnDelete(DeleteBehavior.SetNull);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
