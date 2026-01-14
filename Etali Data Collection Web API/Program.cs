@@ -89,36 +89,71 @@ var dbConfig = builder.Configuration.GetSection("Database").Get<DatabaseConfigur
 
 // Add database context with PostgreSQL
 var connectionString = builder.Configuration.GetConnectionString("EtaliDatabase");
+
+// Log configuration source information for debugging
+var configDebugInfo = new
+{
+    HasConnectionString = !string.IsNullOrEmpty(connectionString),
+    ConnectionStringLength = connectionString?.Length ?? 0,
+    Environment = builder.Environment.EnvironmentName,
+    ConfigurationSources = builder.Configuration.GetType().Name
+};
+
 if (string.IsNullOrEmpty(connectionString))
 {
+    // Log available configuration keys for debugging
+    var logger = LoggerFactory.Create(b => b.AddConsole()).CreateLogger<Program>();
+    logger.LogError(
+        "Database connection string 'EtaliDatabase' is not configured. " +
+        "Environment: {Environment}. " +
+        "Please set ConnectionStrings__EtaliDatabase environment variable or ConnectionStrings:EtaliDatabase in appsettings.json. " +
+        "Note: Double underscore (__) is used in environment variables to represent nested configuration.",
+        builder.Environment.EnvironmentName);
+    
     throw new InvalidOperationException(
         "Database connection string 'EtaliDatabase' is not configured. " +
-        "Please set ConnectionStrings:EtaliDatabase in appsettings.json or environment variables.");
+        "Please set ConnectionStrings__EtaliDatabase environment variable (note: double underscore for nested config) " +
+        "or ConnectionStrings:EtaliDatabase in appsettings.json.");
 }
 
-builder.Services.AddDbContext<EtaliDatabase>(options =>
+// Validate connection string format before using it
+try
 {
-    options.UseNpgsql(connectionString, npgsqlOptions =>
+    var csBuilder = new Npgsql.NpgsqlConnectionStringBuilder(connectionString);
+    
+    // Validate required connection parameters
+    if (string.IsNullOrEmpty(csBuilder.Host))
     {
-        npgsqlOptions.EnableRetryOnFailure(
-            maxRetryCount: dbConfig.MaxRetryCount,
-            maxRetryDelay: TimeSpan.FromSeconds(dbConfig.MaxRetryDelay),
-            errorCodesToAdd: null);
-        
-        npgsqlOptions.CommandTimeout(dbConfig.CommandTimeout);
-        npgsqlOptions.MaxBatchSize(dbConfig.PoolSize);
-    });
-
-    if (dbConfig.EnableSensitiveDataLogging)
-    {
-        options.EnableSensitiveDataLogging();
+        throw new InvalidOperationException("Database connection string is missing 'Host' parameter.");
     }
-
-    if (dbConfig.EnableDetailedErrors)
+    if (string.IsNullOrEmpty(csBuilder.Database))
     {
-        options.EnableDetailedErrors();
+        throw new InvalidOperationException("Database connection string is missing 'Database' parameter.");
     }
-});
+    
+    // Log connection info (without password) for debugging
+    var logger = LoggerFactory.Create(b => b.AddConsole()).CreateLogger<Program>();
+    logger.LogInformation(
+        "Database connection configured: Host={Host}, Database={Database}, Port={Port}",
+        csBuilder.Host,
+        csBuilder.Database,
+        csBuilder.Port);
+}
+catch (ArgumentException ex)
+{
+    var logger = LoggerFactory.Create(b => b.AddConsole()).CreateLogger<Program>();
+    logger.LogError(ex,
+        "Invalid database connection string format. " +
+        "Connection string length: {Length}. " +
+        "Expected format: 'Host=hostname;Database=dbname;Username=user;Password=pass' " +
+        "Ensure environment variable ConnectionStrings__EtaliDatabase is properly set.",
+        connectionString?.Length ?? 0);
+    
+    throw new InvalidOperationException(
+        "Invalid database connection string format. " +
+        "Expected format: 'Host=hostname;Database=dbname;Username=user;Password=pass'. " +
+        "Please check ConnectionStrings__EtaliDatabase environment variable.", ex);
+}
 
 // Configure ASP.NET Core Identity
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>

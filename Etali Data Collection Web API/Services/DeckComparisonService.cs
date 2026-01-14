@@ -10,8 +10,7 @@ namespace Etali_Data_Collection_Web_API.Services;
 public class DeckComparisonService(
     EtaliDatabase database,
     ILogger<DeckComparisonService> logger,
-    IHandGenerationService handGenerationService,
-    GameConfiguration gameConfiguration) : IDeckComparisonService
+    IHandGenerationService handGenerationService) : IDeckComparisonService
 {
     private const double ZScore90Percent = 1.645;
     private static readonly int[] HandSizes = [7, 6, 5, 4, 3];

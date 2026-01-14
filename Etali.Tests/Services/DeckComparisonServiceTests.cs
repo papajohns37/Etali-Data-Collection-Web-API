@@ -1,5 +1,4 @@
 using Etali_Data_Collection_Web_API;
-using Etali_Data_Collection_Web_API.Configuration;
 using Etali_Data_Collection_Web_API.Models;
 using Etali_Data_Collection_Web_API.Services;
 using Microsoft.EntityFrameworkCore;
@@ -15,7 +14,6 @@ public class DeckComparisonServiceTests
     private readonly DeckComparisonService _service;
     private readonly Mock<ILogger<DeckComparisonService>> _loggerMock;
     private readonly Mock<IHandGenerationService> _handGenerationMock;
-    private readonly GameConfiguration _gameConfiguration;
 
     public DeckComparisonServiceTests()
     {
@@ -25,13 +23,11 @@ public class DeckComparisonServiceTests
         _database = new EtaliDatabase(options);
         _loggerMock = new Mock<ILogger<DeckComparisonService>>();
         _handGenerationMock = new Mock<IHandGenerationService>();
-        _gameConfiguration = new GameConfiguration();
         
         _service = new DeckComparisonService(
             _database,
             _loggerMock.Object,
-            _handGenerationMock.Object,
-            _gameConfiguration);
+            _handGenerationMock.Object);
     }
 
     #region AddDeckComparisonAsync Tests

@@ -96,11 +96,13 @@ public class EtaliDatabase(DbContextOptions<EtaliDatabase> options) : IdentityDb
                 .OnDelete(DeleteBehavior.SetNull);
 
             // Check constraints
-            entity.HasCheckConstraint("ck_evaluated_hands_min_cards", 
-                "minimum_cards_to_cast_etali >= 1 AND minimum_cards_to_cast_etali <= 8");
-            
-            entity.HasCheckConstraint("ck_evaluated_hands_seat_order", 
-                "seat_order >= 1 AND seat_order <= 4");
+            entity.ToTable(t =>
+            {
+                t.HasCheckConstraint("ck_evaluated_hands_min_cards", 
+                    "minimum_cards_to_cast_etali >= 1 AND minimum_cards_to_cast_etali <= 8");
+                t.HasCheckConstraint("ck_evaluated_hands_seat_order", 
+                    "seat_order >= 1 AND seat_order <= 4");
+            });
         });
 
         // Configure Decklist
@@ -197,8 +199,11 @@ public class EtaliDatabase(DbContextOptions<EtaliDatabase> options) : IdentityDb
                 .HasConstraintName("fk_deck_comparisons_decklists_deck2_id");
 
             // Check constraint to ensure deck1Id < deck2Id (canonical ordering)
-            entity.HasCheckConstraint("ck_deck_comparisons_deck_order", 
-                "deck1_id < deck2_id");
+            entity.ToTable(t =>
+            {
+                t.HasCheckConstraint("ck_deck_comparisons_deck_order", 
+                    "deck1_id < deck2_id");
+            });
         });
 
         // Configure ComparisonEvaluatedHand
@@ -254,17 +259,17 @@ public class EtaliDatabase(DbContextOptions<EtaliDatabase> options) : IdentityDb
                 .OnDelete(DeleteBehavior.SetNull);
 
             // Check constraints
-            entity.HasCheckConstraint("ck_comparison_evaluated_hands_which_deck", 
-                "which_deck >= 1 AND which_deck <= 2");
-
-            entity.HasCheckConstraint("ck_comparison_evaluated_hands_min_cards", 
-                "minimum_cards_to_cast_etali >= 1 AND minimum_cards_to_cast_etali <= 8");
-            
-            entity.HasCheckConstraint("ck_comparison_evaluated_hands_seat_order", 
-                "seat_order >= 1 AND seat_order <= 4");
-
-            entity.HasCheckConstraint("ck_comparison_evaluated_hands_gen_attempts", 
-                "generation_attempts >= 1");
+            entity.ToTable(t =>
+            {
+                t.HasCheckConstraint("ck_comparison_evaluated_hands_which_deck", 
+                    "which_deck >= 1 AND which_deck <= 2");
+                t.HasCheckConstraint("ck_comparison_evaluated_hands_min_cards", 
+                    "minimum_cards_to_cast_etali >= 1 AND minimum_cards_to_cast_etali <= 8");
+                t.HasCheckConstraint("ck_comparison_evaluated_hands_seat_order", 
+                    "seat_order >= 1 AND seat_order <= 4");
+                t.HasCheckConstraint("ck_comparison_evaluated_hands_gen_attempts", 
+                    "generation_attempts >= 1");
+            });
         });
 
         // Configure Identity tables to use snake_case
