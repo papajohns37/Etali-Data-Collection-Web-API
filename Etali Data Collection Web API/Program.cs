@@ -31,7 +31,8 @@ builder.Services.AddCors(options =>
         {
             policy.WithOrigins(allowedOrigins.Split(','))
                   .AllowAnyMethod()
-                  .AllowAnyHeader();
+                  .AllowAnyHeader()
+                  .AllowCredentials();
         }
     });
 });
@@ -92,7 +93,7 @@ if (string.IsNullOrEmpty(connectionString))
 {
     throw new InvalidOperationException(
         "Database connection string 'EtaliDatabase' is not configured. " +
-        "Please set ConnectionStrings:EtaliDatabase in appsettings.json or user secrets.");
+        "Please set ConnectionStrings:EtaliDatabase in appsettings.json or environment variables.");
 }
 
 builder.Services.AddDbContext<EtaliDatabase>(options =>
@@ -143,10 +144,17 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 var jwtConfig = builder.Configuration.GetSection("Jwt").Get<JwtConfiguration>();
 if (jwtConfig == null || string.IsNullOrEmpty(jwtConfig.SecretKey))
 {
-    throw new InvalidOperationException("JWT configuration is missing or invalid. Please configure Jwt:SecretKey in appsettings.json or user secrets.");
+    throw new InvalidOperationException("JWT configuration is missing or invalid. Please configure Jwt:SecretKey in appsettings.json or environment variables.");
+}
+
+if (jwtConfig.SecretKey.Length < 32)
+{
+    throw new InvalidOperationException("JWT SecretKey must be at least 32 characters long for security.");
 }
 
 var key = Encoding.UTF8.GetBytes(jwtConfig.SecretKey);
+
+var isProduction = builder.Environment.IsProduction();
 
 builder.Services.AddAuthentication(options =>
 {
@@ -157,7 +165,7 @@ builder.Services.AddAuthentication(options =>
 .AddJwtBearer(options =>
 {
     options.SaveToken = true;
-    options.RequireHttpsMetadata = false; // Set to true in production with HTTPS
+    options.RequireHttpsMetadata = isProduction; // Require HTTPS in production
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
@@ -271,6 +279,12 @@ builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddDebug();
 
+// In production, add JSON logging for better log aggregation
+if (isProduction)
+{
+    builder.Logging.AddJsonConsole();
+}
+
 var app = builder.Build();
 
 // Run database migrations and seed data
@@ -278,6 +292,12 @@ await InitializeDatabaseAsync(app.Services, dbConfig);
 
 // Enable CORS
 app.UseCors();
+
+// Use HTTPS redirection in production
+if (app.Environment.IsProduction())
+{
+    app.UseHttpsRedirection();
+}
 
 // Enable authentication & authorization
 app.UseAuthentication();
@@ -304,6 +324,13 @@ app.MapHandEndpoints();
 app.MapDecklistEndpoints();
 app.MapStatisticsEndpoints();
 app.MapDeckComparisonEndpoints();
+
+// Log startup information
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
+logger.LogInformation("Etali Data Collection API starting in {Environment} mode", app.Environment.EnvironmentName);
+logger.LogInformation("CORS Policy: {CorsPolicy}", allowedOrigins == "*" ? "Allow All Origins" : $"Restricted to: {allowedOrigins}");
+logger.LogInformation("HTTPS Enforcement: {HttpsEnabled}", app.Environment.IsProduction() ? "Enabled" : "Disabled (Development)");
+logger.LogInformation("Database AutoMigrate: {AutoMigrate}", dbConfig.AutoMigrate ? "Enabled" : "Disabled");
 
 app.Run();
 
@@ -418,9 +445,9 @@ static async Task SeedDatabaseAsync(IServiceProvider services)
     }
     else
     {
-        logger.LogWarning("Default admin credentials not configured. Please set DefaultAdmin:Username and DefaultAdmin:Password in user secrets or configuration.");
+        logger.LogWarning("Default admin credentials not configured. Please set DefaultAdmin:Username and DefaultAdmin:Password in environment variables or configuration.");
     }
 }
 
 // Make Program class accessible for testing
-public partial class Program { }
+public partial class Program { }public partial class Program { }

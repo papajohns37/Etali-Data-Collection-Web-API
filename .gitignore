@@ -400,3 +400,48 @@ FodyWeavers.xsd
 # PuppeteerSharp downloaded browsers
 Chrome/
 ChromeHeadlessShell/
+
+##############################################
+## SECURITY: Never commit sensitive data!
+##############################################
+
+# User Secrets (stored in user profile, not in project)
+# But if someone accidentally copies them here, ignore them
+**/secrets.json
+**/appsettings.*.user.json
+
+# Environment-specific settings with potential secrets
+appsettings.Local.json
+appsettings.*.local.json
+
+# Database files (if using SQLite locally)
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Environment variable files
+.env
+.env.local
+.env.*.local
+
+# Any file with 'secret' in the name
+*secret*.txt
+*Secret*.txt
+*SECRET*.txt
+
+# Private keys and certificates
+*.key
+*.pem
+*.crt
+*.cer
+*.p12
+
+# Backup files that might contain sensitive data
+*.bak
+*.backup
+*.old
+
+# Rider
+.idea/
