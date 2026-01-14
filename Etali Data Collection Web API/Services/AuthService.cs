@@ -94,6 +94,7 @@ public class AuthService(
             Token: token,
             Expiration: expiration,
             Username: user.UserName!,
+            UserId: user.Id,
             Roles: [.. roles]
         );
     }

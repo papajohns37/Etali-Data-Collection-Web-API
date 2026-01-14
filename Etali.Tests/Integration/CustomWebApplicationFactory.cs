@@ -273,4 +273,23 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
         var loginResponse = await response.Content.ReadFromJsonAsync<LoginResponse>();
         return loginResponse?.Token ?? throw new InvalidOperationException("Failed to get auth token");
     }
+
+    /// <summary>
+    /// Helper method to get the user ID for a given username.
+    /// </summary>
+    public async Task<string> GetUserIdAsync(string username)
+    {
+        await EnsureDatabaseSeededAsync();
+        
+        using var scope = Services.CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var user = await userManager.FindByNameAsync(username);
+        
+        if (user == null)
+        {
+            throw new InvalidOperationException($"User {username} not found in database.");
+        }
+        
+        return user.Id;
+    }
 }

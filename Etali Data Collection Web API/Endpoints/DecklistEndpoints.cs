@@ -65,6 +65,33 @@ Typically contains 99 cards for Commander format.
             })
             .Produces<List<Decklist>>(StatusCodes.Status200OK)
             .AllowAnonymous();
+
+        // PATCH /decklist/{id}/rename - Rename a decklist (Requires Authorization)
+        app.MapPatch("/decklist/{id}/rename", RenameDecklist)
+            .WithName("RenameDecklist")
+            .WithTags("Decklists")
+            .WithOpenApi(operation => new(operation)
+            {
+                Summary = "Rename a decklist",
+                Description = @"Updates the name of an existing decklist.
+
+Authorization rules:
+- Admin users can rename any decklist
+- Contributor users can only rename decklists they created
+
+Parameters:
+- id: The ID of the decklist to rename
+- newName: The new name for the decklist
+
+**Authentication:** Required (Contributor or Admin role)
+**Authorization:** Bearer token in Authorization header"
+            })
+            .Produces(StatusCodes.Status200OK)
+            .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
+            .Produces<ProblemDetails>(StatusCodes.Status401Unauthorized)
+            .Produces<ProblemDetails>(StatusCodes.Status403Forbidden)
+            .Produces<ProblemDetails>(StatusCodes.Status404NotFound)
+            .RequireAuthorization("ContributorOrAdmin");
     }
 
     private static async Task<Ok<object>> AddDecklist(
@@ -86,5 +113,79 @@ Typically contains 99 cards for Commander format.
         EtaliDatabase database)
     {
         return TypedResults.Ok(await database.Decklists.ToListAsync());
+    }
+
+    private static async Task<Results<Ok<object>, BadRequest<ProblemDetails>, NotFound<ProblemDetails>, UnauthorizedHttpResult>> RenameDecklist(
+        int id,
+        string newName,
+        EtaliDatabase database,
+        ClaimsPrincipal user,
+        ILogger<Program> logger)
+    {
+        // Validate new name
+        if (string.IsNullOrWhiteSpace(newName))
+        {
+            return TypedResults.BadRequest(new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Invalid name",
+                Detail = "Decklist name cannot be empty or whitespace."
+            });
+        }
+
+        if (newName.Length > 500)
+        {
+            return TypedResults.BadRequest(new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Invalid name",
+                Detail = "Decklist name cannot exceed 500 characters."
+            });
+        }
+
+        // Find the decklist
+        var decklist = await database.Decklists.FirstOrDefaultAsync(d => d.Id == id);
+        if (decklist == null)
+        {
+            return TypedResults.NotFound(new ProblemDetails
+            {
+                Status = StatusCodes.Status404NotFound,
+                Title = "Decklist not found",
+                Detail = $"Decklist with ID {id} does not exist."
+            });
+        }
+
+        // Get user information
+        var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+        var isAdmin = user.IsInRole("Admin");
+
+        // Check authorization: user must be admin OR the creator of the decklist
+        if (!isAdmin && decklist.CreatedByUserId != userId)
+        {
+            logger.LogWarning(
+                "User {UserId} attempted to rename decklist {DecklistId} created by {CreatorId}",
+                userId, id, decklist.CreatedByUserId ?? "anonymous");
+            
+            return TypedResults.Unauthorized();
+        }
+
+        // Store old name for logging
+        var oldName = decklist.Name;
+
+        // Update the name
+        decklist.Name = newName;
+        await database.SaveChangesAsync();
+
+        logger.LogInformation(
+            "Decklist {DecklistId} renamed from '{OldName}' to '{NewName}' by user {UserId} (Admin: {IsAdmin})",
+            id, oldName, newName, userId, isAdmin);
+
+        return TypedResults.Ok<object>(new
+        {
+            message = "Decklist renamed successfully",
+            id = id,
+            oldName = oldName,
+            newName = newName
+        });
     }
 }
