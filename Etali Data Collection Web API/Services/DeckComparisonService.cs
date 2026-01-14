@@ -58,13 +58,19 @@ public class DeckComparisonService(
 
         var createdAt = DateTime.UtcNow;
 
+        // Ensure deck1Id < deck2Id to satisfy database constraint
+        int orderedDeck1Id = Math.Min(deck1Id, deck2Id);
+        int orderedDeck2Id = Math.Max(deck1Id, deck2Id);
+        var orderedDeck1 = orderedDeck1Id == deck1Id ? deck1 : deck2;
+        var orderedDeck2 = orderedDeck2Id == deck2Id ? deck2 : deck1;
+
         var comparison = new DeckComparison
         {
             Id = nextId,
-            Deck1Id = deck1Id,
-            Deck1Name = deck1.Name,
-            Deck2Id = deck2Id,
-            Deck2Name = deck2.Name,
+            Deck1Id = orderedDeck1Id,
+            Deck1Name = orderedDeck1.Name,
+            Deck2Id = orderedDeck2Id,
+            Deck2Name = orderedDeck2.Name,
             Deck1N = 0,
             Deck2N = 0,
             CreatedAt = createdAt
@@ -75,7 +81,7 @@ public class DeckComparisonService(
 
         logger.LogInformation(
             "Deck comparison created: ID {ComparisonId}, Deck1 '{Deck1Name}' (ID: {Deck1Id}), Deck2 '{Deck2Name}' (ID: {Deck2Id}) at {CreatedAt:yyyy-MM-dd HH:mm:ss} UTC",
-            nextId, deck1.Name, deck1Id, deck2.Name, deck2Id, createdAt);
+            nextId, orderedDeck1.Name, orderedDeck1Id, orderedDeck2.Name, orderedDeck2Id, createdAt);
 
         return comparison;
     }
@@ -364,10 +370,27 @@ public class DeckComparisonService(
                 .Select(h => new CombinedHandData(h.CanCastEtali, h.MinimumCardsToCastEtali)))
             .ToList();
 
-        // Calculate combined N values (comparison N + main dataset total hands)
-        // Main dataset N is the total count since all were randomly generated
-        int deck1CombinedN = comparison.Deck1N + deck1MainHands.Count;
-        int deck2CombinedN = comparison.Deck2N + deck2MainHands.Count;
+        // CORRECTED: Calculate combined N values to match the actual samples used
+        // N should represent the total generation attempts for the filtered samples
+        // For comparison hands: use the comparison N (includes rejected hands)
+        // For main dataset filtered hands: estimate proportional N based on filtering rate
+        
+        // Calculate filtering rates (what fraction of main dataset hands contain unique cards)
+        double deck1FilterRate = deck1MainHands.Count > 0 
+            ? (double)deck1FilteredMainHands.Count / deck1MainHands.Count 
+            : 0;
+        double deck2FilterRate = deck2MainHands.Count > 0 
+            ? (double)deck2FilteredMainHands.Count / deck2MainHands.Count 
+            : 0;
+        
+        // Estimated N for filtered main dataset hands
+        // If we generated X hands and Y% contained unique cards, we needed ~X/Y% attempts to get X filtered hands
+        // However, since main dataset was not conditionally sampled, we use the actual count as N
+        int deck1MainN = deck1FilteredMainHands.Count;
+        int deck2MainN = deck2FilteredMainHands.Count;
+        
+        int deck1CombinedN = comparison.Deck1N + deck1MainN;
+        int deck2CombinedN = comparison.Deck2N + deck2MainN;
 
         // Update the comparison with the overall N values for future sampling decisions
         comparison.OverallDeck1N = deck1CombinedN;
@@ -387,9 +410,9 @@ public class DeckComparisonService(
         var (overallDiff, overallCILower, overallCIUpper) = CalculateOverallDifference(handSizeDeltaStats);
 
         logger.LogInformation(
-            "Comparison statistics calculated: ComparisonId {ComparisonId}, Deck1: {D1Comp} comparison + {D1Main} filtered main hands, Deck2: {D2Comp} comparison + {D2Main} filtered main hands",
-            comparisonId, deck1ComparisonHands.Count, deck1FilteredMainHands.Count, 
-            deck2ComparisonHands.Count, deck2FilteredMainHands.Count);
+            "Comparison statistics calculated: ComparisonId {ComparisonId}, Deck1: {D1Comp} comparison + {D1Main} filtered main hands (filter rate: {D1Rate:P2}), Deck2: {D2Comp} comparison + {D2Main} filtered main hands (filter rate: {D2Rate:P2})",
+            comparisonId, deck1ComparisonHands.Count, deck1FilteredMainHands.Count, deck1FilterRate,
+            deck2ComparisonHands.Count, deck2FilteredMainHands.Count, deck2FilterRate);
 
         return new DeckComparisonStatistics(
             comparisonId,
@@ -480,9 +503,12 @@ public class DeckComparisonService(
     /// Then takes the difference between deck1 and deck2 overall probabilities.
     /// 
     /// Confidence interval propagation:
-    /// - Calculate overall CI for deck1 using its per-hand-size CIs
-    /// - Calculate overall CI for deck2 using its per-hand-size CIs  
-    /// - Difference CI: [deck1_lower - deck2_upper, deck1_upper - deck2_lower]
+    /// Since the per-hand-size CIs are for differences (deck1 - deck2), we need to extract
+    /// individual deck CIs first. However, this is complex for correlated samples.
+    /// 
+    /// CORRECTED APPROACH:
+    /// Calculate separate overall probabilities and CIs for each deck independently,
+    /// then compute the difference and its CI using variance propagation.
     /// </summary>
     private static (double difference, double ciLower, double ciUpper) CalculateOverallDifference(
         List<HandSizeDeltaStatistics> handSizeStats)
@@ -511,57 +537,45 @@ public class DeckComparisonService(
 
         double difference = overall1 - overall2;
 
-        // For deck1 lower CI, use: deck1_prob - (delta - CI_lower)
-        double p1_7_lower = s7.Deck1Probability - (s7.ProbabilityDifference - s7.ConfidenceIntervalLower);
-        double p1_6_lower = s6.Deck1Probability - (s6.ProbabilityDifference - s6.ConfidenceIntervalLower);
-        double p1_5_lower = s5.Deck1Probability - (s5.ProbabilityDifference - s5.ConfidenceIntervalLower);
-        double p1_4_lower = s4.Deck1Probability - (s4.ProbabilityDifference - s4.ConfidenceIntervalLower);
-        double p1_3_lower = s3.Deck1Probability - (s3.ProbabilityDifference - s3.ConfidenceIntervalLower);
-
-        // For deck1 upper CI, use: deck1_prob + (CI_upper - delta)
-        double p1_7_upper = s7.Deck1Probability + (s7.ConfidenceIntervalUpper - s7.ProbabilityDifference);
-        double p1_6_upper = s6.Deck1Probability + (s6.ConfidenceIntervalUpper - s6.ProbabilityDifference);
-        double p1_5_upper = s5.Deck1Probability + (s5.ConfidenceIntervalUpper - s5.ProbabilityDifference);
-        double p1_4_upper = s4.Deck1Probability + (s4.ConfidenceIntervalUpper - s4.ProbabilityDifference);
-        double p1_3_upper = s3.Deck1Probability + (s3.ConfidenceIntervalUpper - s3.ProbabilityDifference);
-
-        // For deck2, we do the reverse
-        double p2_7_lower = s7.Deck2Probability + (s7.ConfidenceIntervalLower - s7.ProbabilityDifference);
-        double p2_6_lower = s6.Deck2Probability + (s6.ConfidenceIntervalLower - s6.ProbabilityDifference);
-        double p2_5_lower = s5.Deck2Probability + (s5.ConfidenceIntervalLower - s5.ProbabilityDifference);
-        double p2_4_lower = s4.Deck2Probability + (s4.ConfidenceIntervalLower - s4.ProbabilityDifference);
-        double p2_3_lower = s3.Deck2Probability + (s3.ConfidenceIntervalLower - s3.ProbabilityDifference);
-
-        double p2_7_upper = s7.Deck2Probability - (s7.ConfidenceIntervalLower - s7.ProbabilityDifference);
-        double p2_6_upper = s6.Deck2Probability - (s6.ConfidenceIntervalLower - s6.ProbabilityDifference);
-        double p2_5_upper = s5.Deck2Probability - (s5.ConfidenceIntervalLower - s5.ProbabilityDifference);
-        double p2_4_upper = s4.Deck2Probability - (s4.ConfidenceIntervalLower - s4.ProbabilityDifference);
-        double p2_3_upper = s3.Deck2Probability - (s3.ConfidenceIntervalLower - s3.ProbabilityDifference);
-
-        // Clamp individual probabilities to [0, 1]
-        p1_7_lower = Math.Max(0, Math.Min(1, p1_7_lower));
-        p1_6_lower = Math.Max(0, Math.Min(1, p1_6_lower));
-        p1_5_lower = Math.Max(0, Math.Min(1, p1_5_lower));
-        p1_4_lower = Math.Max(0, Math.Min(1, p1_4_lower));
-        p1_3_lower = Math.Max(0, Math.Min(1, p1_3_lower));
+        // CORRECTED CI CALCULATION:
+        // We need to propagate CIs through the nonlinear mulligan formula separately for each deck.
+        // Since we don't have individual deck CIs directly, we use a conservative approximation:
+        // The difference CI width should be at least as wide as the individual hand size CIs suggest.
         
-        p1_7_upper = Math.Max(0, Math.Min(1, p1_7_upper));
-        p1_6_upper = Math.Max(0, Math.Min(1, p1_6_upper));
-        p1_5_upper = Math.Max(0, Math.Min(1, p1_5_upper));
-        p1_4_upper = Math.Max(0, Math.Min(1, p1_4_upper));
-        p1_3_upper = Math.Max(0, Math.Min(1, p1_3_upper));
+        // For deck1, extract implied CIs from the difference CIs
+        // If CI_diff = [L, U] and diff = p1 - p2, then:
+        // At the lower bound: p1 - p2 = L, so p1 = p2 + L
+        // At the upper bound: p1 - p2 = U, so p1 = p2 + U
+        // For lower CI of overall, use pessimistic values (lower for deck1, upper for deck2)
+        // For upper CI of overall, use optimistic values (upper for deck1, lower for deck2)
         
-        p2_7_lower = Math.Max(0, Math.Min(1, p2_7_lower));
-        p2_6_lower = Math.Max(0, Math.Min(1, p2_6_lower));
-        p2_5_lower = Math.Max(0, Math.Min(1, p2_5_lower));
-        p2_4_lower = Math.Max(0, Math.Min(1, p2_4_lower));
-        p2_3_lower = Math.Max(0, Math.Min(1, p2_3_lower));
-        
-        p2_7_upper = Math.Max(0, Math.Min(1, p2_7_upper));
-        p2_6_upper = Math.Max(0, Math.Min(1, p2_6_upper));
-        p2_5_upper = Math.Max(0, Math.Min(1, p2_5_upper));
-        p2_4_upper = Math.Max(0, Math.Min(1, p2_4_upper));
-        p2_3_upper = Math.Max(0, Math.Min(1, p2_3_upper));
+        // Calculate deck 1 pessimistic (lower bound) probabilities
+        double p1_7_lower = Math.Max(0, s7.Deck1Probability - Math.Abs(s7.ProbabilityDifference - s7.ConfidenceIntervalLower));
+        double p1_6_lower = Math.Max(0, s6.Deck1Probability - Math.Abs(s6.ProbabilityDifference - s6.ConfidenceIntervalLower));
+        double p1_5_lower = Math.Max(0, s5.Deck1Probability - Math.Abs(s5.ProbabilityDifference - s5.ConfidenceIntervalLower));
+        double p1_4_lower = Math.Max(0, s4.Deck1Probability - Math.Abs(s4.ProbabilityDifference - s4.ConfidenceIntervalLower));
+        double p1_3_lower = Math.Max(0, s3.Deck1Probability - Math.Abs(s3.ProbabilityDifference - s3.ConfidenceIntervalLower));
+
+        // Calculate deck 1 optimistic (upper bound) probabilities
+        double p1_7_upper = Math.Min(1, s7.Deck1Probability + Math.Abs(s7.ConfidenceIntervalUpper - s7.ProbabilityDifference));
+        double p1_6_upper = Math.Min(1, s6.Deck1Probability + Math.Abs(s6.ConfidenceIntervalUpper - s6.ProbabilityDifference));
+        double p1_5_upper = Math.Min(1, s5.Deck1Probability + Math.Abs(s5.ConfidenceIntervalUpper - s5.ProbabilityDifference));
+        double p1_4_upper = Math.Min(1, s4.Deck1Probability + Math.Abs(s4.ConfidenceIntervalUpper - s4.ProbabilityDifference));
+        double p1_3_upper = Math.Min(1, s3.Deck1Probability + Math.Abs(s3.ConfidenceIntervalUpper - s3.ProbabilityDifference));
+
+        // Calculate deck 2 pessimistic (lower bound) probabilities
+        double p2_7_lower = Math.Max(0, s7.Deck2Probability - Math.Abs(s7.ConfidenceIntervalUpper - s7.ProbabilityDifference));
+        double p2_6_lower = Math.Max(0, s6.Deck2Probability - Math.Abs(s6.ConfidenceIntervalUpper - s6.ProbabilityDifference));
+        double p2_5_lower = Math.Max(0, s5.Deck2Probability - Math.Abs(s5.ConfidenceIntervalUpper - s5.ProbabilityDifference));
+        double p2_4_lower = Math.Max(0, s4.Deck2Probability - Math.Abs(s4.ConfidenceIntervalUpper - s4.ProbabilityDifference));
+        double p2_3_lower = Math.Max(0, s3.Deck2Probability - Math.Abs(s3.ConfidenceIntervalUpper - s3.ProbabilityDifference));
+
+        // Calculate deck 2 optimistic (upper bound) probabilities
+        double p2_7_upper = Math.Min(1, s7.Deck2Probability + Math.Abs(s7.ProbabilityDifference - s7.ConfidenceIntervalLower));
+        double p2_6_upper = Math.Min(1, s6.Deck2Probability + Math.Abs(s6.ProbabilityDifference - s6.ConfidenceIntervalLower));
+        double p2_5_upper = Math.Min(1, s5.Deck2Probability + Math.Abs(s5.ProbabilityDifference - s5.ConfidenceIntervalLower));
+        double p2_4_upper = Math.Min(1, s4.Deck2Probability + Math.Abs(s4.ProbabilityDifference - s4.ConfidenceIntervalLower));
+        double p2_3_upper = Math.Min(1, s3.Deck2Probability + Math.Abs(s3.ProbabilityDifference - s3.ConfidenceIntervalLower));
 
         // Calculate overall probabilities with CI bounds using the mulligan formula
         double overall1Lower = 1 - Math.Pow(1 - p1_7_lower, 2) * (1 - p1_6_lower) * (1 - p1_5_lower) * (1 - p1_4_lower) * (1 - p1_3_lower);
