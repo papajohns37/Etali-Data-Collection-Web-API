@@ -172,20 +172,78 @@ Parameters:
         // Store old name for logging
         var oldName = decklist.Name;
 
-        // Update the name
+        // Update the decklist name
         decklist.Name = newName;
+
+        // Update all related data that stores the decklist name
+        
+        // 1. Update EvaluatedHands that reference this decklist
+        var evaluatedHands = await database.EvaluatedHands
+            .Where(h => h.DecklistId == id)
+            .ToListAsync();
+        
+        foreach (var hand in evaluatedHands)
+        {
+            // Create a new record with updated name (records are immutable)
+            var updatedHand = hand with { DecklistName = newName };
+            database.Entry(hand).CurrentValues.SetValues(updatedHand);
+        }
+
+        // 2. Update ComparisonEvaluatedHands that reference this decklist
+        var comparisonHands = await database.ComparisonEvaluatedHands
+            .Where(h => h.DecklistId == id)
+            .ToListAsync();
+        
+        foreach (var hand in comparisonHands)
+        {
+            // Create a new record with updated name (records are immutable)
+            var updatedHand = hand with { DecklistName = newName };
+            database.Entry(hand).CurrentValues.SetValues(updatedHand);
+        }
+
+        // 3. Update DeckComparisons where this decklist is Deck1 or Deck2
+        var comparisonsAsDeck1 = await database.DeckComparisons
+            .Where(dc => dc.Deck1Id == id)
+            .ToListAsync();
+        
+        foreach (var comparison in comparisonsAsDeck1)
+        {
+            comparison.Deck1Name = newName;
+        }
+
+        var comparisonsAsDeck2 = await database.DeckComparisons
+            .Where(dc => dc.Deck2Id == id)
+            .ToListAsync();
+        
+        foreach (var comparison in comparisonsAsDeck2)
+        {
+            comparison.Deck2Name = newName;
+        }
+
+        // Save all changes atomically
         await database.SaveChangesAsync();
 
         logger.LogInformation(
-            "Decklist {DecklistId} renamed from '{OldName}' to '{NewName}' by user {UserId} (Admin: {IsAdmin})",
-            id, oldName, newName, userId, isAdmin);
+            "Decklist {DecklistId} renamed from '{OldName}' to '{NewName}' by user {UserId} (Admin: {IsAdmin}). " +
+            "Updated {EvaluatedHandsCount} evaluated hands, {ComparisonHandsCount} comparison hands, " +
+            "{Deck1ComparisonsCount} comparisons as deck1, {Deck2ComparisonsCount} comparisons as deck2",
+            id, oldName, newName, userId, isAdmin,
+            evaluatedHands.Count, comparisonHands.Count,
+            comparisonsAsDeck1.Count, comparisonsAsDeck2.Count);
 
         return TypedResults.Ok<object>(new
         {
             message = "Decklist renamed successfully",
             id = id,
             oldName = oldName,
-            newName = newName
+            newName = newName,
+            updatedRecords = new
+            {
+                evaluatedHands = evaluatedHands.Count,
+                comparisonEvaluatedHands = comparisonHands.Count,
+                comparisonsAsDeck1 = comparisonsAsDeck1.Count,
+                comparisonsAsDeck2 = comparisonsAsDeck2.Count
+            }
         });
     }
 }

@@ -389,5 +389,148 @@ public class DecklistEndpointTests : IClassFixture<CustomWebApplicationFactory>
         }
     }
 
+    [Fact]
+    public async Task RenameDecklist_UpdatesAllRelatedData()
+    {
+        // Arrange - Create a complete test scenario with all related data
+        var userId = await _factory.GetUserIdAsync(CustomWebApplicationFactory.TestUsername);
+        
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<EtaliDatabase>();
+            
+            // Create test decklist
+            var testDeck = new Decklist
+            {
+                Id = 4444,
+                Name = "Original Deck Name",
+                Cards = new[] 
+                { 
+                    new Card { Name = "Sol Ring", Type = "Artifact" },
+                    new Card { Name = "Mana Vault", Type = "Artifact" }
+                },
+                CreatedByUserId = userId
+            };
+            db.Decklists.Add(testDeck);
+
+            // Create another deck for comparisons
+            var otherDeck = new Decklist
+            {
+                Id = 4445,
+                Name = "Other Deck",
+                Cards = new[] { new Card { Name = "Worn Powerstone", Type = "Artifact" } },
+                CreatedByUserId = userId
+            };
+            db.Decklists.Add(otherDeck);
+
+            // Create EvaluatedHand referencing the test deck
+            var evaluatedHand = new EvaluatedHand(
+                Id: 9001,
+                Cards: testDeck.Cards,
+                SeatOrder: 1,
+                Stickers: new[] { 6, 5, 4 },
+                CanCastEtali: true,
+                MinimumCardsToCastEtali: 3,
+                DecklistId: 4444,
+                DecklistName: "Original Deck Name",
+                LowestGambleOdds: 0.75f,
+                CreatedByUserId: userId
+            );
+            db.EvaluatedHands.Add(evaluatedHand);
+
+            // Create DeckComparison with test deck as Deck1
+            var comparison1 = new DeckComparison
+            {
+                Id = 7001,
+                Deck1Id = 4444,
+                Deck1Name = "Original Deck Name",
+                Deck2Id = 4445,
+                Deck2Name = "Other Deck"
+            };
+            db.DeckComparisons.Add(comparison1);
+
+            // Create DeckComparison with test deck as Deck2
+            var comparison2 = new DeckComparison
+            {
+                Id = 7002,
+                Deck1Id = 4445,
+                Deck1Name = "Other Deck",
+                Deck2Id = 4444,
+                Deck2Name = "Original Deck Name"
+            };
+            db.DeckComparisons.Add(comparison2);
+
+            // Create ComparisonEvaluatedHand
+            var comparisonHand = new ComparisonEvaluatedHand(
+                Id: 9002,
+                ComparisonId: 7001,
+                WhichDeck: 1,
+                Cards: testDeck.Cards,
+                SeatOrder: 1,
+                Stickers: new[] { 6, 5, 4 },
+                CanCastEtali: true,
+                MinimumCardsToCastEtali: 3,
+                DecklistId: 4444,
+                DecklistName: "Original Deck Name",
+                LowestGambleOdds: 0.75f,
+                GenerationAttempts: 1,
+                CreatedByUserId: userId
+            );
+            db.ComparisonEvaluatedHands.Add(comparisonHand);
+
+            await db.SaveChangesAsync();
+        }
+
+        // Act - Rename the deck
+        var contributorClient = await _factory.CreateAuthenticatedClientAsync(useAdmin: false);
+        var response = await contributorClient.PatchAsync("/decklist/4444/rename?newName=Updated Deck Name", null);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var result = await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+        Assert.Equal("Decklist renamed successfully", result.GetProperty("message").GetString());
+        
+        // Verify the response includes update counts
+        var updatedRecords = result.GetProperty("updatedRecords");
+        Assert.Equal(1, updatedRecords.GetProperty("evaluatedHands").GetInt32());
+        Assert.Equal(1, updatedRecords.GetProperty("comparisonEvaluatedHands").GetInt32());
+        Assert.Equal(1, updatedRecords.GetProperty("comparisonsAsDeck1").GetInt32());
+        Assert.Equal(1, updatedRecords.GetProperty("comparisonsAsDeck2").GetInt32());
+
+        // Verify all data was updated in the database
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<EtaliDatabase>();
+
+            // Check Decklist
+            var updatedDeck = await db.Decklists.FindAsync(4444);
+            Assert.NotNull(updatedDeck);
+            Assert.Equal("Updated Deck Name", updatedDeck.Name);
+
+            // Check EvaluatedHand
+            var updatedEvaluatedHand = await db.EvaluatedHands.FindAsync(9001);
+            Assert.NotNull(updatedEvaluatedHand);
+            Assert.Equal("Updated Deck Name", updatedEvaluatedHand.DecklistName);
+
+            // Check DeckComparison where deck is Deck1
+            var updatedComparison1 = await db.DeckComparisons.FindAsync(7001);
+            Assert.NotNull(updatedComparison1);
+            Assert.Equal("Updated Deck Name", updatedComparison1.Deck1Name);
+            Assert.Equal("Other Deck", updatedComparison1.Deck2Name); // Should not change
+
+            // Check DeckComparison where deck is Deck2
+            var updatedComparison2 = await db.DeckComparisons.FindAsync(7002);
+            Assert.NotNull(updatedComparison2);
+            Assert.Equal("Other Deck", updatedComparison2.Deck1Name); // Should not change
+            Assert.Equal("Updated Deck Name", updatedComparison2.Deck2Name);
+
+            // Check ComparisonEvaluatedHand
+            var updatedComparisonHand = await db.ComparisonEvaluatedHands.FindAsync(9002);
+            Assert.NotNull(updatedComparisonHand);
+            Assert.Equal("Updated Deck Name", updatedComparisonHand.DecklistName);
+        }
+    }
+
     #endregion
 }
