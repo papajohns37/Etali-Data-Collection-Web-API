@@ -1,0 +1,77 @@
+# .dockerignore
+# Ignore build artifacts and unnecessary files
+
+# Build results
+**/bin/
+**/obj/
+**/out/
+**/publish/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# ReSharper / Rider
+.idea/
+*.sln.iml
+_ReSharper*/
+*.[Rr]e[Ss]harper
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+
+# Test results
+**/TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Docker
+.dockerignore
+Dockerfile
+docker-compose*.yml
+
+# Documentation (not needed in container)
+*.md
+!README.md
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+azure-pipelines.yml
+
+# User secrets and environment files
+secrets.json
+.env
+.env.*
+
+# Migration files (runtime migrations enabled)
+**/Migrations/
+
+# Tests (not needed in production image)
+**/*Tests/
+**/*.Tests/
+**/test/
+**/tests/

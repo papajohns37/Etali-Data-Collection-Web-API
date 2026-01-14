@@ -1,0 +1,130 @@
+# Render Blueprint for Etali Data Collection API
+# This file defines your infrastructure as code for Render.com
+# Deploy with: render-cli blueprint create
+
+services:
+  # PostgreSQL Database
+  - type: pserv
+    name: etali-database
+    env: docker
+    plan: starter # Change to 'free' for testing (90 days limit) or 'standard' for production
+    region: oregon # Change to your preferred region
+    ipAllowList: [] # Empty = allow from all Render services
+    databases:
+      - name: etali_db
+        user: etali_user
+
+  # Web API Service
+  - type: web
+    name: etali-data-collection-api
+    env: docker
+    region: oregon # Must match database region for best performance
+    plan: starter # Change to 'free' for testing (spins down) or 'standard' for production
+    dockerfilePath: ./Etali Data Collection Web API/Dockerfile
+    healthCheckPath: /health
+    branch: master # Change to your deployment branch
+    
+    envVars:
+      # Database Connection
+      - key: ConnectionStrings__EtaliDatabase
+        fromDatabase:
+          name: etali-database
+          property: connectionString
+      
+      # JWT Configuration
+      - key: Jwt__Issuer
+        value: EtaliDataCollectionApi
+      
+      - key: Jwt__Audience
+        value: EtaliDataCollectionApi
+      
+      - key: Jwt__ExpirationInDays
+        value: 7
+      
+      - key: Jwt__SecretKey
+        generateValue: true # Render will generate a secure random value
+        # OR sync: false # Set this if you want to manually set the value
+      
+      # Moxfield API Configuration
+      - key: MoxfieldApi__BaseUrl
+        value: https://api2.moxfield.com/v3/decks/all/
+      
+      - key: MoxfieldApi__ApiKey
+        sync: false # Set manually in Render dashboard if you have an API key
+      
+      # Admin Account Configuration
+      - key: DefaultAdmin__Username
+        value: admin # Change to your preferred admin username
+      
+      - key: DefaultAdmin__Password
+        generateValue: true # Render will generate a secure password
+        # IMPORTANT: Note the generated password from logs on first deploy!
+        # OR sync: false # Set this if you want to manually set the password
+      
+      # CORS Configuration
+      - key: AllowedOrigins
+        value: "*" # Change to your frontend URL(s) in production
+        # Example: https://yourfrontend.com,https://www.yourfrontend.com
+      
+      # Environment
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      
+      # Database Configuration (optional overrides)
+      - key: Database__AutoMigrate
+        value: true
+      
+      - key: Database__CommandTimeout
+        value: 30
+      
+      - key: Database__MaxRetryCount
+        value: 5
+      
+      - key: Database__PoolSize
+        value: 100
+
+# Additional configuration notes:
+# 
+# 1. First-time setup:
+#    - Fork/clone this repository
+#    - Update 'branch' to your deployment branch
+#    - Customize region, plan, and environment variables
+#    - Deploy using Render dashboard: New > Blueprint
+#
+# 2. JWT SecretKey:
+#    - If using generateValue: true, Render creates a secure random key
+#    - To use your own key: Change to sync: false and set in dashboard
+#
+# 3. Admin Password:
+#    - If using generateValue: true, check deployment logs for password
+#    - Save it securely! You'll need it to login
+#    - To set your own: Change to sync: false and set in dashboard
+#
+# 4. CORS:
+#    - Development: Leave as "*" 
+#    - Production: Set to your frontend domain(s)
+#
+# 5. Plans:
+#    - free: Good for testing (spins down after inactivity, 90 day DB limit)
+#    - starter: Good for small production ($7/month each)
+#    - standard: Full production ($25/month web, $20/month DB)
+#
+# 6. Regions:
+#    - Available: oregon, frankfurt, singapore, ohio
+#    - Use same region for DB and web service for best performance
+#
+# 7. Auto-deploy:
+#    - Render auto-deploys on git push to specified branch
+#    - Disable in service settings if you want manual control
+#
+# 8. Health checks:
+#    - Configured at /health endpoint
+#    - Render monitors and auto-restarts on failures
+#
+# 9. Database migrations:
+#    - AutoMigrate is enabled (runs on startup)
+#    - Set Database__AutoMigrate=false for manual control
+#
+# 10. Monitoring:
+#     - View logs in Render dashboard
+#     - Set up alerts in Settings > Notifications

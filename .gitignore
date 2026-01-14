@@ -443,5 +443,12 @@ appsettings.*.local.json
 *.backup
 *.old
 
-# Rider
-.idea/
+# Docker override files (may contain local secrets)
+docker-compose.override.yml
+docker-compose.*.yml
+!docker-compose.yml
+
+# macOS files
+.DS_Store
+.AppleDouble
+.LSOverride
