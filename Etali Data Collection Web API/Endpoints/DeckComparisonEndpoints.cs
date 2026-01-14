@@ -72,7 +72,10 @@ Both N values start at 0 and increment as hands are generated.
             .WithOpenApi(operation => new(operation)
             {
                 Summary = "Generate a hand for comparison evaluation",
-                Description = @"Generates a hand from the deck with the lower N value.
+                Description = @"Generates a hand from the deck with fewer evaluated comparison hands.
+
+The system automatically balances sampling between decks by always generating from
+the deck with the lower count of evaluated comparison hands.
 
 The hand will contain at least one card unique to that deck.
 Multiple generation attempts may be made to find such a hand.
@@ -140,11 +143,16 @@ This approach provides:
 - Faster convergence to statistically significant results
 - Valid inference (both sources are conditionally sampled on unique cards)
 
+SAMPLE SIZES:
+Sample sizes used for statistical calculations are based on the count of evaluated hands,
+not generation attempts. Only hands containing unique cards provide information about
+performance differences, so rejected hands (those without unique cards) are not included
+in the sample size for statistical inference.
+
 Includes:
 - Per-hand-size probability differences with 90% confidence intervals
 - Overall mulligan probability difference
-- Combined sample sizes (comparison + filtered main dataset)
-- Total N values (all generation attempts including rejected hands)
+- Sample sizes (count of evaluated hands with unique cards)
 
 Note: Main dataset hands are filtered per-comparison to only include those
 with at least one card unique to the respective deck in this comparison.

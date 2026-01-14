@@ -328,8 +328,6 @@ public class DeckComparisonStatisticsTests
             "Budget Etali",
             70,
             65,
-            100,
-            95,
             handSizeStats,
             0.08,
             0.01,
@@ -343,8 +341,6 @@ public class DeckComparisonStatisticsTests
         Assert.Equal("Budget Etali", statistics.Deck2Name);
         Assert.Equal(70, statistics.Deck1TotalHandsEvaluated);
         Assert.Equal(65, statistics.Deck2TotalHandsEvaluated);
-        Assert.Equal(100, statistics.Deck1N);
-        Assert.Equal(95, statistics.Deck2N);
         Assert.Equal(handSizeStats, statistics.HandSizeDeltaStatistics);
         Assert.Equal(0.08, statistics.OverallProbabilityDifference, 2);
         Assert.Equal(0.01, statistics.OverallConfidenceIntervalLower, 2);
@@ -363,8 +359,6 @@ public class DeckComparisonStatisticsTests
             "Budget Etali",
             70,
             65,
-            100,
-            95,
             Array.Empty<HandSizeDeltaStatistics>(),
             0.08,
             0.01,

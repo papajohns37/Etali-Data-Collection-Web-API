@@ -167,21 +167,19 @@ public class DeckComparisonService(
             return null;
         }
 
-        // Determine which deck to generate from (the one with lower N)
-        // Use overall N values if available and greater than comparison-specific N
-        int deck1N = (comparison.OverallDeck1N.HasValue && comparison.OverallDeck1N.Value > comparison.Deck1N) 
-            ? comparison.OverallDeck1N.Value 
-            : comparison.Deck1N;
+        // Determine which deck to generate from based on the count of comparison-specific evaluated hands
+        // Always generate from the deck with fewer evaluated comparison hands to maintain balance
+        var deck1ComparisonHandCount = await database.ComparisonEvaluatedHands
+            .CountAsync(h => h.ComparisonId == comparisonId && h.WhichDeck == 1);
         
-        int deck2N = (comparison.OverallDeck2N.HasValue && comparison.OverallDeck2N.Value > comparison.Deck2N) 
-            ? comparison.OverallDeck2N.Value 
-            : comparison.Deck2N;
+        var deck2ComparisonHandCount = await database.ComparisonEvaluatedHands
+            .CountAsync(h => h.ComparisonId == comparisonId && h.WhichDeck == 2);
 
         int targetDeckId;
         int whichDeck;
         string targetDeckName;
 
-        if (deck1N <= deck2N)
+        if (deck1ComparisonHandCount <= deck2ComparisonHandCount)
         {
             targetDeckId = comparison.Deck1Id;
             whichDeck = 1;
@@ -233,10 +231,8 @@ public class DeckComparisonService(
             if (hasUniqueCard)
             {
                 logger.LogInformation(
-                    "Generated hand for comparison {ComparisonId}, deck {WhichDeck} (N: {Deck1N} vs {Deck2N}, using overall N: {UsingOverall}) after {Attempts} attempts",
-                    comparisonId, whichDeck, deck1N, deck2N, 
-                    comparison.OverallDeck1N.HasValue || comparison.OverallDeck2N.HasValue, 
-                    attempts);
+                    "Generated hand for comparison {ComparisonId}, deck {WhichDeck} (evaluated hands: {Deck1Count} vs {Deck2Count}) after {Attempts} attempts",
+                    comparisonId, whichDeck, deck1ComparisonHandCount, deck2ComparisonHandCount, attempts);
 
                 return new ComparisonHand(
                     generatedHand.Id,
@@ -369,33 +365,6 @@ public class DeckComparisonService(
                 .Select(h => new CombinedHandData(h.CanCastEtali, h.MinimumCardsToCastEtali)))
             .ToList();
 
-        // CORRECTED: Calculate combined N values to match the actual samples used
-        // N should represent the total generation attempts for the filtered samples
-        // For comparison hands: use the comparison N (includes rejected hands)
-        // For main dataset filtered hands: estimate proportional N based on filtering rate
-        
-        // Calculate filtering rates (what fraction of main dataset hands contain unique cards)
-        double deck1FilterRate = deck1MainHands.Count > 0 
-            ? (double)deck1FilteredMainHands.Count / deck1MainHands.Count 
-            : 0;
-        double deck2FilterRate = deck2MainHands.Count > 0 
-            ? (double)deck2FilteredMainHands.Count / deck2MainHands.Count 
-            : 0;
-        
-        // Estimated N for filtered main dataset hands
-        // If we generated X hands and Y% contained unique cards, we needed ~X/Y% attempts to get X filtered hands
-        // However, since main dataset was not conditionally sampled, we use the actual count as N
-        int deck1MainN = deck1FilteredMainHands.Count;
-        int deck2MainN = deck2FilteredMainHands.Count;
-        
-        int deck1CombinedN = comparison.Deck1N + deck1MainN;
-        int deck2CombinedN = comparison.Deck2N + deck2MainN;
-
-        // Update the comparison with the overall N values for future sampling decisions
-        comparison.OverallDeck1N = deck1CombinedN;
-        comparison.OverallDeck2N = deck2CombinedN;
-        await database.SaveChangesAsync();
-
         // Calculate statistics for each hand size using combined data
         var handSizeDeltaStats = new List<HandSizeDeltaStatistics>();
 
@@ -409,9 +378,9 @@ public class DeckComparisonService(
         var (overallDiff, overallCILower, overallCIUpper) = CalculateOverallDifference(handSizeDeltaStats);
 
         logger.LogInformation(
-            "Comparison statistics calculated: ComparisonId {ComparisonId}, Deck1: {D1Comp} comparison + {D1Main} filtered main hands (filter rate: {D1Rate:P2}), Deck2: {D2Comp} comparison + {D2Main} filtered main hands (filter rate: {D2Rate:P2})",
-            comparisonId, deck1ComparisonHands.Count, deck1FilteredMainHands.Count, deck1FilterRate,
-            deck2ComparisonHands.Count, deck2FilteredMainHands.Count, deck2FilterRate);
+            "Comparison statistics calculated: ComparisonId {ComparisonId}, Deck1: {D1Comp} comparison + {D1Main} filtered main hands, Deck2: {D2Comp} comparison + {D2Main} filtered main hands",
+            comparisonId, deck1ComparisonHands.Count, deck1FilteredMainHands.Count,
+            deck2ComparisonHands.Count, deck2FilteredMainHands.Count);
 
         return new DeckComparisonStatistics(
             comparisonId,
@@ -421,8 +390,6 @@ public class DeckComparisonService(
             comparison.Deck2Name,
             deck1CombinedHands.Count,
             deck2CombinedHands.Count,
-            deck1CombinedN,
-            deck2CombinedN,
             [.. handSizeDeltaStats],
             overallDiff,
             overallCILower,

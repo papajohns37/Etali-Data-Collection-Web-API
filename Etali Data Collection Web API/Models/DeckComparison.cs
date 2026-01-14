@@ -5,6 +5,7 @@ using System.ComponentModel;
 /// <summary>
 /// Represents a comparison between two decklists for statistical analysis.
 /// Tracks the number of hands generated (N) for each deck during the comparison process.
+/// N values track generation efficiency but are not used for statistical calculations.
 /// </summary>
 /// <example>
 /// {
@@ -15,8 +16,6 @@ using System.ComponentModel;
 ///   "deck2Name": "Budget Etali",
 ///   "deck1N": 42,
 ///   "deck2N": 38,
-///   "overallDeck1N": 150,
-///   "overallDeck2N": 145,
 ///   "createdAt": "2024-01-15T10:30:00Z"
 /// }
 /// </example>
@@ -55,32 +54,18 @@ public class DeckComparison
     /// <summary>
     /// The number of hands generated for deck 1 during this comparison.
     /// This includes both evaluated hands and rejected hands (those without unique cards).
+    /// Tracks generation efficiency but is not used for statistical calculations.
     /// </summary>
-    [Description("Number of hands generated for deck 1 (includes rejected hands)")]
+    [Description("Number of hands generated for deck 1 (includes rejected hands, for efficiency tracking only)")]
     public int Deck1N { get; set; } = 0;
     
     /// <summary>
     /// The number of hands generated for deck 2 during this comparison.
     /// This includes both evaluated hands and rejected hands (those without unique cards).
+    /// Tracks generation efficiency but is not used for statistical calculations.
     /// </summary>
-    [Description("Number of hands generated for deck 2 (includes rejected hands)")]
+    [Description("Number of hands generated for deck 2 (includes rejected hands, for efficiency tracking only)")]
     public int Deck2N { get; set; } = 0;
-    
-    /// <summary>
-    /// The overall number of hands available for deck 1, including comparison hands and filtered main dataset.
-    /// This value is updated when statistics are calculated and represents the total N used for sampling decisions.
-    /// When null or zero, falls back to Deck1N.
-    /// </summary>
-    [Description("Overall hands available for deck 1 (comparison + filtered main dataset, used for sampling)")]
-    public int? OverallDeck1N { get; set; }
-    
-    /// <summary>
-    /// The overall number of hands available for deck 2, including comparison hands and filtered main dataset.
-    /// This value is updated when statistics are calculated and represents the total N used for sampling decisions.
-    /// When null or zero, falls back to Deck2N.
-    /// </summary>
-    [Description("Overall hands available for deck 2 (comparison + filtered main dataset, used for sampling)")]
-    public int? OverallDeck2N { get; set; }
     
     /// <summary>
     /// The UTC timestamp when this comparison was created.

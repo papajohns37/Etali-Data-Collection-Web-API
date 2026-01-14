@@ -9,16 +9,17 @@ namespace Etali_Data_Collection_Web_API.Models;
 /// Statistics combine comparison-specific evaluations with filtered main dataset evaluations
 /// for improved statistical precision. Main dataset hands are filtered per-comparison to only
 /// include those containing at least one card unique to the respective deck.
+/// 
+/// Sample sizes used for statistical inference are the counts of evaluated hands (not generation attempts),
+/// as only hands containing unique cards provide information about performance differences.
 /// </summary>
 /// <param name="ComparisonId">The unique identifier of the deck comparison.</param>
 /// <param name="Deck1Id">The database ID of the first decklist.</param>
 /// <param name="Deck1Name">The name of the first decklist.</param>
 /// <param name="Deck2Id">The database ID of the second decklist.</param>
 /// <param name="Deck2Name">The name of the second decklist.</param>
-/// <param name="Deck1TotalHandsEvaluated">Total hands evaluated for deck 1 (comparison-specific + filtered main dataset).</param>
-/// <param name="Deck2TotalHandsEvaluated">Total hands evaluated for deck 2 (comparison-specific + filtered main dataset).</param>
-/// <param name="Deck1N">Total hands generated for deck 1 (comparison N + all main dataset hands).</param>
-/// <param name="Deck2N">Total hands generated for deck 2 (comparison N + all main dataset hands).</param>
+/// <param name="Deck1TotalHandsEvaluated">Total hands evaluated for deck 1 (comparison-specific + filtered main dataset). This is the sample size used for statistical calculations.</param>
+/// <param name="Deck2TotalHandsEvaluated">Total hands evaluated for deck 2 (comparison-specific + filtered main dataset). This is the sample size used for statistical calculations.</param>
 /// <param name="HandSizeDeltaStatistics">Array of delta statistics for each hand size (3-7 cards).</param>
 /// <param name="OverallProbabilityDifference">Difference in overall mulligan probability (Deck1 - Deck2).</param>
 /// <param name="OverallConfidenceIntervalLower">Lower bound of 90% confidence interval for overall difference.</param>
@@ -32,8 +33,6 @@ namespace Etali_Data_Collection_Web_API.Models;
 ///   "deck2Name": "Budget Etali",
 ///   "deck1TotalHandsEvaluated": 45,
 ///   "deck2TotalHandsEvaluated": 42,
-///   "deck1N": 150,
-///   "deck2N": 145,
 ///   "handSizeDeltaStatistics": [
 ///     {
 ///       "handSize": 7,
@@ -67,17 +66,11 @@ public record DeckComparisonStatistics(
     [property: Description("Name of the second decklist")]
     string Deck2Name,
     
-    [property: Description("Total number of hands evaluated for deck 1")]
+    [property: Description("Total number of hands evaluated for deck 1 (sample size for statistics)")]
     int Deck1TotalHandsEvaluated,
     
-    [property: Description("Total number of hands evaluated for deck 2")]
+    [property: Description("Total number of hands evaluated for deck 2 (sample size for statistics)")]
     int Deck2TotalHandsEvaluated,
-    
-    [property: Description("Total hands generated for deck 1 (includes rejected)")]
-    int Deck1N,
-    
-    [property: Description("Total hands generated for deck 2 (includes rejected)")]
-    int Deck2N,
     
     [property: Description("Delta statistics for each hand size (3-7 cards)")]
     HandSizeDeltaStatistics[] HandSizeDeltaStatistics,
