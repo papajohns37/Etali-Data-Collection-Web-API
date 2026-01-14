@@ -90,20 +90,12 @@ var dbConfig = builder.Configuration.GetSection("Database").Get<DatabaseConfigur
 // Add database context with PostgreSQL
 var connectionString = builder.Configuration.GetConnectionString("EtaliDatabase");
 
-// Log configuration source information for debugging
-var configDebugInfo = new
-{
-    HasConnectionString = !string.IsNullOrEmpty(connectionString),
-    ConnectionStringLength = connectionString?.Length ?? 0,
-    Environment = builder.Environment.EnvironmentName,
-    ConfigurationSources = builder.Configuration.GetType().Name
-};
-
 if (string.IsNullOrEmpty(connectionString))
 {
     // Log available configuration keys for debugging
-    var logger = LoggerFactory.Create(b => b.AddConsole()).CreateLogger<Program>();
-    logger.LogError(
+    using var loggerFactory = LoggerFactory.Create(b => b.AddConsole());
+    var startupLogger = loggerFactory.CreateLogger<Program>();
+    startupLogger.LogError(
         "Database connection string 'EtaliDatabase' is not configured. " +
         "Environment: {Environment}. " +
         "Please set ConnectionStrings__EtaliDatabase environment variable or ConnectionStrings:EtaliDatabase in appsettings.json. " +
@@ -132,8 +124,9 @@ try
     }
     
     // Log connection info (without password) for debugging
-    var logger = LoggerFactory.Create(b => b.AddConsole()).CreateLogger<Program>();
-    logger.LogInformation(
+    using var loggerFactory = LoggerFactory.Create(b => b.AddConsole());
+    var startupLogger = loggerFactory.CreateLogger<Program>();
+    startupLogger.LogInformation(
         "Database connection configured: Host={Host}, Database={Database}, Port={Port}",
         csBuilder.Host,
         csBuilder.Database,
@@ -141,8 +134,9 @@ try
 }
 catch (ArgumentException ex)
 {
-    var logger = LoggerFactory.Create(b => b.AddConsole()).CreateLogger<Program>();
-    logger.LogError(ex,
+    using var loggerFactory = LoggerFactory.Create(b => b.AddConsole());
+    var startupLogger = loggerFactory.CreateLogger<Program>();
+    startupLogger.LogError(ex,
         "Invalid database connection string format. " +
         "Connection string length: {Length}. " +
         "Expected format: 'Host=hostname;Database=dbname;Username=user;Password=pass' " +
@@ -154,6 +148,30 @@ catch (ArgumentException ex)
         "Expected format: 'Host=hostname;Database=dbname;Username=user;Password=pass'. " +
         "Please check ConnectionStrings__EtaliDatabase environment variable.", ex);
 }
+
+builder.Services.AddDbContext<EtaliDatabase>(options =>
+{
+    options.UseNpgsql(connectionString, npgsqlOptions =>
+    {
+        npgsqlOptions.EnableRetryOnFailure(
+            maxRetryCount: dbConfig.MaxRetryCount,
+            maxRetryDelay: TimeSpan.FromSeconds(dbConfig.MaxRetryDelay),
+            errorCodesToAdd: null);
+        
+        npgsqlOptions.CommandTimeout(dbConfig.CommandTimeout);
+        npgsqlOptions.MaxBatchSize(dbConfig.PoolSize);
+    });
+
+    if (dbConfig.EnableSensitiveDataLogging)
+    {
+        options.EnableSensitiveDataLogging();
+    }
+
+    if (dbConfig.EnableDetailedErrors)
+    {
+        options.EnableDetailedErrors();
+    }
+});
 
 // Configure ASP.NET Core Identity
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
