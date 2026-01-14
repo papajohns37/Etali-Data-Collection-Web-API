@@ -148,7 +148,7 @@ curl -X POST https://your-app.onrender.com/auth/login \
 
 ---
 
-## ? Test Locally with Docker First
+## ?? Test Locally with Docker First
 
 Before deploying to Render, test locally:
 
@@ -156,6 +156,7 @@ Before deploying to Render, test locally:
 ```bash
 docker build -t etali-api:latest -f "Etali Data Collection Web API/Dockerfile" .
 ```
+**Note:** Make sure you're in the repository root directory when running this command.
 
 ### Run Container
 ```bash
@@ -180,8 +181,12 @@ docker run -d \
 # Health check
 curl http://localhost:8080/health
 
-# Swagger UI
+# Swagger UI (Windows)
 start http://localhost:8080
+
+# Swagger UI (Mac/Linux)
+open http://localhost:8080  # Mac
+xdg-open http://localhost:8080  # Linux
 
 # View logs
 docker logs etali-test -f
@@ -218,7 +223,13 @@ docker-compose down -v
 
 ---
 
-## ? Common Issues & Solutions
+## ?? Common Issues & Solutions
+
+### "failed to read dockerfile: open Dockerfile: no such file or directory"
+- ? Make sure you're in the **repository root directory** when running Docker commands
+- ? The correct build command is: `docker build -t etali-api:latest -f "Etali Data Collection Web API/Dockerfile" .`
+- ? Note the `.` at the end - this specifies the build context
+- ? The `-f` flag specifies the Dockerfile location relative to the build context
 
 ### "Connection refused" or Database Errors
 - ? Make sure you used the **Internal Database URL** (not External)

@@ -20,7 +20,8 @@ services:
     env: docker
     region: oregon # Must match database region for best performance
     plan: starter # Change to 'free' for testing (spins down) or 'standard' for production
-    dockerfilePath: ./Etali Data Collection Web API/Dockerfile
+    dockerfilePath: Etali Data Collection Web API/Dockerfile
+    dockerContext: .
     healthCheckPath: /health
     branch: master # Change to your deployment branch
     

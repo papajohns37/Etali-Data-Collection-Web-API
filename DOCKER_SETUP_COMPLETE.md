@@ -274,10 +274,10 @@ docker logs etali-api-test -f
 - **Quick Start**: `RENDER_QUICK_START.md` - 5-minute deployment
 - **Docker Guide**: `DOCKER_DEPLOYMENT_RENDER.md` - Comprehensive Docker info
 - **Render Setup**: `RENDER_DEPLOYMENT.md` - Detailed Render configuration
-- **Environment Vars**: `RENDER_ENV_VARS_QUICK_REF.md` - Variable reference
+- **Troubleshooting**: `DOCKER_TROUBLESHOOTING.md` - Common issues and solutions
 - **Local Dev**: `LOCAL_DEVELOPMENT.md` - Local development setup
 
-## ? Support
+## ?? Support
 
 ### Resources:
 - Render Documentation: https://render.com/docs/docker
@@ -285,7 +285,8 @@ docker logs etali-api-test -f
 - Docker Documentation: https://docs.docker.com/
 
 ### Troubleshooting:
-- Check `RENDER_QUICK_START.md` - Common Issues section
+- Check `DOCKER_TROUBLESHOOTING.md` - Common Docker build issues
+- Check `RENDER_QUICK_START.md` - Common deployment issues
 - Review application logs in Render dashboard
 - Test locally with `test-docker.ps1`
 - Verify environment variables are set correctly
