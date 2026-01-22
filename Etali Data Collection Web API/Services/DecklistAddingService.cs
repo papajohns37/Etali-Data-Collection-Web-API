@@ -10,7 +10,6 @@ namespace Etali_Data_Collection_Web_API.Services;
 /// </summary>
 public partial class DecklistAddingService(
     EtaliDatabase database,
-    ILogger<DecklistAddingService> logger,
     IHttpClientFactory httpClientFactory,
     MoxfieldConfiguration moxfieldConfig,
     IRateLimiter rateLimiter) : IDecklistAddingService
@@ -45,8 +44,6 @@ public partial class DecklistAddingService(
         });
         
         await database.SaveChangesAsync();
-        logger.LogInformation("Decklist '{DecklistName}' (Moxfield ID: {MoxfieldId}) added with ID {DecklistId} containing {CardCount} cards at {CreatedAt:yyyy-MM-dd HH:mm:ss} UTC by user {UserId}",
-            name, moxfieldId, nextId, cards.Count, createdAt, createdByUserId ?? "anonymous");
     }
 
     private List<Card> ExtractMainboardCards(string json)
@@ -129,7 +126,6 @@ public partial class DecklistAddingService(
             }
         }
         
-        logger.LogInformation("Extracted {CardCount} total cards from mainboard", cards.Count);
         return cards;
     }
 
@@ -169,8 +165,6 @@ public partial class DecklistAddingService(
 
         string deckId = match.Groups[1].Value;
         var requestUrl = moxfieldConfig.BaseUrl + deckId;
-        
-        logger.LogInformation("Requesting decklist from: {RequestUrl}", requestUrl);
 
         // Enforce rate limiting (1 request per second)
         await rateLimiter.WaitIfNeededAsync();
@@ -196,14 +190,11 @@ public partial class DecklistAddingService(
                 _ => $"Failed to fetch decklist. Status: {response.StatusCode} - {response.ReasonPhrase}"
             };
             
-            logger.LogError("Failed to fetch decklist from Moxfield. Status: {StatusCode}, URL: {RequestUrl}", response.StatusCode, requestUrl);
             throw new HttpRequestException(errorMessage);
         }
 
         // Read and return the JSON content
         var jsonContent = await response.Content.ReadAsStringAsync();
-        
-        logger.LogInformation("Successfully retrieved decklist");
         
         return jsonContent;
     }

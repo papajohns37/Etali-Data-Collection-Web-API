@@ -14,8 +14,7 @@ namespace Etali_Data_Collection_Web_API.Services;
 public class AuthService(
     UserManager<ApplicationUser> userManager,
     SignInManager<ApplicationUser> signInManager,
-    JwtConfiguration jwtConfig,
-    ILogger<AuthService> logger) : IAuthService
+    JwtConfiguration jwtConfig) : IAuthService
 {
     private const string AdminRole = "Admin";
     private const string ContributorRole = "Contributor";
@@ -36,7 +35,6 @@ public class AuthService(
         if (!result.Succeeded)
         {
             var errors = result.Errors.Select(e => e.Description).ToArray();
-            logger.LogWarning("Failed to register user {Username}: {Errors}", username, string.Join(", ", errors));
             return (false, errors);
         }
 
@@ -47,13 +45,11 @@ public class AuthService(
         if (!roleResult.Succeeded)
         {
             var errors = roleResult.Errors.Select(e => e.Description).ToArray();
-            logger.LogError("Failed to assign role {Role} to user {Username}: {Errors}", role, username, string.Join(", ", errors));
             // User was created but role assignment failed - consider this a failure
             await userManager.DeleteAsync(user);
             return (false, errors);
         }
 
-        logger.LogInformation("User {Username} registered successfully with role {Role}", username, role);
         return (true, []);
     }
 
@@ -63,21 +59,18 @@ public class AuthService(
         // Validate inputs
         if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
         {
-            logger.LogWarning("Login attempt failed: Missing username or password");
             return null;
         }
 
         var user = await userManager.FindByNameAsync(username);
         if (user == null)
         {
-            logger.LogWarning("Login attempt failed: User {Username} not found", username);
             return null;
         }
 
         var result = await signInManager.CheckPasswordSignInAsync(user, password, lockoutOnFailure: false);
         if (!result.Succeeded)
         {
-            logger.LogWarning("Login attempt failed: Invalid password for user {Username}", username);
             return null;
         }
 
@@ -87,8 +80,6 @@ public class AuthService(
         // Generate JWT token
         var token = GenerateJwtToken(user, roles);
         var expiration = DateTime.UtcNow.AddDays(jwtConfig.ExpirationInDays);
-
-        logger.LogInformation("User {Username} logged in successfully", username);
 
         return new LoginResponse(
             Token: token,

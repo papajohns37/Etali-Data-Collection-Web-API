@@ -1,13 +1,12 @@
 using Etali_Data_Collection_Web_API.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 
 namespace Etali_Data_Collection_Web_API.Services;
 
 /// <summary>
 /// Service for calculating statistical analysis of decklist hand testing data.
 /// </summary>
-public class StatisticsService(EtaliDatabase database, ILogger<StatisticsService> logger) : IStatisticsService
+public class StatisticsService(EtaliDatabase database) : IStatisticsService
 {
 	private const double ZScore90Percent = 1.645; // Z-score for 90% confidence interval
 	private static readonly int[] HandSizes = [7, 6, 5, 4, 3];
@@ -240,10 +239,6 @@ public class StatisticsService(EtaliDatabase database, ILogger<StatisticsService
 		// Use QuickSelect for O(n) average case vs O(n log n) for full sort
 		double bootstrapLower = QuickSelect(overallProbabilities, lowerIndex);
 		double bootstrapUpper = QuickSelect(overallProbabilities, upperIndex);
-
-		// Log the bootstrap results
-		logger.LogInformation("Bootstrap CI: [{Lower:F4}, {Upper:F4}] (width: {Width:F4})",
-			bootstrapLower, bootstrapUpper, bootstrapUpper - bootstrapLower);
 
 		return (overallProb, bootstrapLower, bootstrapUpper);
 	}

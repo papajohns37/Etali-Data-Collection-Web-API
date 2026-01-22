@@ -9,7 +9,6 @@ namespace Etali_Data_Collection_Web_API.Services;
 /// </summary>
 public class DeckComparisonService(
     EtaliDatabase database,
-    ILogger<DeckComparisonService> logger,
     IHandGenerationService handGenerationService) : IDeckComparisonService
 {
     private const double ZScore90Percent = 1.645;
@@ -78,10 +77,6 @@ public class DeckComparisonService(
         database.DeckComparisons.Add(comparison);
         await database.SaveChangesAsync();
 
-        logger.LogInformation(
-            "Deck comparison created: ID {ComparisonId}, Deck1 '{Deck1Name}' (ID: {Deck1Id}), Deck2 '{Deck2Name}' (ID: {Deck2Id}) at {CreatedAt:yyyy-MM-dd HH:mm:ss} UTC",
-            nextId, orderedDeck1.Name, orderedDeck1Id, orderedDeck2.Name, orderedDeck2Id, createdAt);
-
         return comparison;
     }
 
@@ -113,7 +108,6 @@ public class DeckComparisonService(
 
         if (deck1 == null || deck2 == null)
         {
-            logger.LogWarning("One or both decklists not found: Deck1Id={Deck1Id}, Deck2Id={Deck2Id}", deck1Id, deck2Id);
             return null;
         }
 
@@ -136,10 +130,6 @@ public class DeckComparisonService(
             .Where(c => deck2CardNames.Contains(c.Name))
             .DistinctBy(c => c.Name)
             .ToArray();
-
-        logger.LogInformation(
-            "Card differences between Deck {Deck1Id} and Deck {Deck2Id}: {OnlyInDeck1} unique to deck1, {OnlyInDeck2} unique to deck2, {Shared} shared",
-            deck1Id, deck2Id, onlyInDeck1.Length, onlyInDeck2.Length, shared.Length);
 
         return new CardDifferences(onlyInDeck1, onlyInDeck2, shared);
     }
@@ -230,10 +220,6 @@ public class DeckComparisonService(
 
             if (hasUniqueCard)
             {
-                logger.LogInformation(
-                    "Generated hand for comparison {ComparisonId}, deck {WhichDeck} (evaluated hands: {Deck1Count} vs {Deck2Count}) after {Attempts} attempts",
-                    comparisonId, whichDeck, deck1ComparisonHandCount, deck2ComparisonHandCount, attempts);
-
                 return new ComparisonHand(
                     generatedHand.Id,
                     comparisonId,
@@ -297,11 +283,6 @@ public class DeckComparisonService(
 
         database.ComparisonEvaluatedHands.Add(comparisonEvaluatedHand);
         await database.SaveChangesAsync();
-
-        logger.LogInformation(
-            "Comparison evaluation submitted: ComparisonId {ComparisonId}, Deck {WhichDeck}, HandId {HandId}, Attempts {Attempts}, New N: {NewN}",
-            comparisonId, whichDeck, evaluatedHand.Id, generationAttempts,
-            whichDeck == 1 ? comparison.Deck1N : comparison.Deck2N);
 
         return comparisonEvaluatedHand;
     }
@@ -376,11 +357,6 @@ public class DeckComparisonService(
 
         // Calculate overall mulligan probability difference
         var (overallDiff, overallCILower, overallCIUpper) = CalculateOverallDifference(handSizeDeltaStats);
-
-        logger.LogInformation(
-            "Comparison statistics calculated: ComparisonId {ComparisonId}, Deck1: {D1Comp} comparison + {D1Main} filtered main hands, Deck2: {D2Comp} comparison + {D2Main} filtered main hands",
-            comparisonId, deck1ComparisonHands.Count, deck1FilteredMainHands.Count,
-            deck2ComparisonHands.Count, deck2FilteredMainHands.Count);
 
         return new DeckComparisonStatistics(
             comparisonId,

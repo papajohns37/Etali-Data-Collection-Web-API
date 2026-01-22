@@ -122,15 +122,6 @@ try
     {
         throw new InvalidOperationException("Database connection string is missing 'Database' parameter.");
     }
-    
-    // Log connection info (without password) for debugging
-    using var loggerFactory = LoggerFactory.Create(b => b.AddConsole());
-    var startupLogger = loggerFactory.CreateLogger<Program>();
-    startupLogger.LogInformation(
-        "Database connection configured: Host={Host}, Database={Database}, Port={Port}",
-        csBuilder.Host,
-        csBuilder.Database,
-        csBuilder.Port);
 }
 catch (ArgumentException ex)
 {
@@ -378,13 +369,6 @@ app.MapDecklistEndpoints();
 app.MapStatisticsEndpoints();
 app.MapDeckComparisonEndpoints();
 
-// Log startup information
-var logger = app.Services.GetRequiredService<ILogger<Program>>();
-logger.LogInformation("Etali Data Collection API starting in {Environment} mode", app.Environment.EnvironmentName);
-logger.LogInformation("CORS Policy: {CorsPolicy}", allowedOrigins == "*" ? "Allow All Origins" : $"Restricted to: {allowedOrigins}");
-logger.LogInformation("HTTPS Enforcement: {HttpsEnabled}", app.Environment.IsProduction() ? "Enabled" : "Disabled (Development)");
-logger.LogInformation("Database AutoMigrate: {AutoMigrate}", dbConfig.AutoMigrate ? "Enabled" : "Disabled");
-
 app.Run();
 
 // Initialize database with migrations and seed data
@@ -395,54 +379,45 @@ static async Task InitializeDatabaseAsync(IServiceProvider services, DatabaseCon
     
     try
     {
-        var db = scope.ServiceProvider.GetRequiredService<EtaliDatabase>();
+      var db = scope.ServiceProvider.GetRequiredService<EtaliDatabase>();
         
-        // Check if we're using InMemory database (for tests)
+  // Check if we're using InMemory database (for tests)
         var providerName = db.Database.ProviderName;
-        var isInMemoryDatabase = providerName == "Microsoft.EntityFrameworkCore.InMemory";
+    var isInMemoryDatabase = providerName == "Microsoft.EntityFrameworkCore.InMemory";
         
-        if (isInMemoryDatabase)
-        {
+    if (isInMemoryDatabase)
+   {
             // For InMemory database (tests), just ensure it's created
             await db.Database.EnsureCreatedAsync();
-            logger.LogInformation("InMemory database created for testing");
-        }
-        else
+  }
+    else
         {
-            // For real databases (PostgreSQL), check for pending migrations
-            var pendingMigrations = await db.Database.GetPendingMigrationsAsync();
-            var hasPendingMigrations = pendingMigrations.Any();
-            
-            if (hasPendingMigrations)
-            {
-                logger.LogInformation("Found {Count} pending migrations", pendingMigrations.Count());
-                
-                if (dbConfig.AutoMigrate)
-                {
-                    logger.LogInformation("Auto-migrating database...");
-                    await db.Database.MigrateAsync();
-                    logger.LogInformation("Database migration completed successfully");
-                }
-                else
-                {
-                    logger.LogWarning(
-                        "Database has pending migrations but AutoMigrate is disabled. " +
-                        "Run 'dotnet ef database update' to apply migrations manually.");
-                }
-            }
-            else
-            {
-                logger.LogInformation("Database is up to date");
-            }
-        }
+  // For real databases (PostgreSQL), check for pending migrations
+    var pendingMigrations = await db.Database.GetPendingMigrationsAsync();
+    var hasPendingMigrations = pendingMigrations.Any();
         
-        // Seed roles and admin user
-        await SeedDatabaseAsync(services);
+       if (hasPendingMigrations)
+      {
+  if (dbConfig.AutoMigrate)
+           {
+   await db.Database.MigrateAsync();
+ }
+     else
+         {
+      logger.LogWarning(
+            "Database has pending migrations but AutoMigrate is disabled. " +
+          "Run 'dotnet ef database update' to apply migrations manually.");
+                }
+            }
+     }
+        
+   // Seed roles and admin user
+  await SeedDatabaseAsync(services);
     }
     catch (Exception ex)
     {
         logger.LogError(ex, "An error occurred while initializing the database");
-        throw;
+     throw;
     }
 }
 
@@ -461,9 +436,8 @@ static async Task SeedDatabaseAsync(IServiceProvider services)
     {
         if (!await roleManager.RoleExistsAsync(role))
         {
-            await roleManager.CreateAsync(new IdentityRole(role));
-            logger.LogInformation("Created role: {Role}", role);
-        }
+await roleManager.CreateAsync(new IdentityRole(role));
+ }
     }
 
     // Create default admin user if configured
@@ -473,32 +447,31 @@ static async Task SeedDatabaseAsync(IServiceProvider services)
     if (!string.IsNullOrEmpty(adminUsername) && !string.IsNullOrEmpty(adminPassword))
     {
         var existingAdmin = await userManager.FindByNameAsync(adminUsername);
-        if (existingAdmin == null)
+     if (existingAdmin == null)
         {
-            var adminUser = new ApplicationUser
-            {
-                UserName = adminUsername,
-                Email = null,
+     var adminUser = new ApplicationUser
+     {
+    UserName = adminUsername,
+           Email = null,
                 EmailConfirmed = false,
                 CreatedAt = DateTime.UtcNow
-            };
+   };
 
-            var result = await userManager.CreateAsync(adminUser, adminPassword);
-            if (result.Succeeded)
+ var result = await userManager.CreateAsync(adminUser, adminPassword);
+   if (result.Succeeded)
+         {
+        await userManager.AddToRoleAsync(adminUser, "Admin");
+ }
+        else
             {
-                await userManager.AddToRoleAsync(adminUser, "Admin");
-                logger.LogInformation("Default admin user created: {Username}", adminUsername);
-            }
-            else
-            {
-                logger.LogError("Failed to create default admin user: {Errors}", 
-                    string.Join(", ", result.Errors.Select(e => e.Description)));
-            }
+       logger.LogError("Failed to create default admin user: {Errors}", 
+       string.Join(", ", result.Errors.Select(e => e.Description)));
         }
+     }
     }
     else
     {
-        logger.LogWarning("Default admin credentials not configured. Please set DefaultAdmin:Username and DefaultAdmin:Password in environment variables or configuration.");
+      logger.LogWarning("Default admin credentials not configured. Please set DefaultAdmin:Username and DefaultAdmin:Password in environment variables or configuration.");
     }
 }
 
