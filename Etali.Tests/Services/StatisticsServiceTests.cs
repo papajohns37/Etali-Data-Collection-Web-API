@@ -2,6 +2,8 @@ using Etali_Data_Collection_Web_API;
 using Etali_Data_Collection_Web_API.Models;
 using Etali_Data_Collection_Web_API.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Moq;
 using Xunit;
 
 namespace Etali.Tests.Services;
@@ -10,6 +12,7 @@ public class StatisticsServiceTests
 {
     private readonly EtaliDatabase _database;
     private readonly StatisticsService _service;
+    private readonly Mock<ILogger<StatisticsService>> _mockLogger;
 
     public StatisticsServiceTests()
     {
@@ -17,7 +20,8 @@ public class StatisticsServiceTests
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
         _database = new EtaliDatabase(options);
-        _service = new StatisticsService(_database);
+        _mockLogger = new Mock<ILogger<StatisticsService>>();
+        _service = new StatisticsService(_database, _mockLogger.Object);
     }
 
     [Fact]
