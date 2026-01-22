@@ -160,7 +160,7 @@ public class StatisticsService(EtaliDatabase database) : IStatisticsService
 		double overallProb = 1 - Math.Pow(1 - p7, 2) * (1 - p6) * (1 - p5) * (1 - p4) * (1 - p3);
 
 		// Bootstrap method for better CI estimation of the mulligan probability
-		int bootstrapSamples = 100_000;
+		int bootstrapSamples = 10_000;
 		double[] overallProbabilities = new double[bootstrapSamples];
 		int handsCount = hands.Count;
 
