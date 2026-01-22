@@ -3,7 +3,6 @@ using Etali_Data_Collection_Web_API.Configuration;
 using Etali_Data_Collection_Web_API.Models;
 using Etali_Data_Collection_Web_API.Services;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
@@ -15,7 +14,6 @@ namespace Etali.Tests.Services;
 /// </summary>
 public class DecklistAddingServiceTests
 {
-    private readonly Mock<ILogger<DecklistAddingService>> _mockLogger;
     private readonly Mock<IRateLimiter> _mockRateLimiter;
     private readonly Mock<IHttpClientFactory> _mockHttpClientFactory;
     private readonly MoxfieldConfiguration _mockConfig;
@@ -23,7 +21,6 @@ public class DecklistAddingServiceTests
 
     public DecklistAddingServiceTests()
     {
-        _mockLogger = new Mock<ILogger<DecklistAddingService>>();
         _mockRateLimiter = new Mock<IRateLimiter>();
         _mockHttpClientFactory = new Mock<IHttpClientFactory>();
         _mockConfig = new MoxfieldConfiguration 
@@ -42,7 +39,7 @@ public class DecklistAddingServiceTests
     public void DecklistAddingService_CanBeConstructed()
     {
         // Act
-        var service = new DecklistAddingService(_database, _mockLogger.Object, _mockHttpClientFactory.Object, _mockConfig, _mockRateLimiter.Object);
+        var service = new DecklistAddingService(_database, _mockHttpClientFactory.Object, _mockConfig, _mockRateLimiter.Object);
 
         // Assert
         Assert.NotNull(service);
@@ -52,7 +49,7 @@ public class DecklistAddingServiceTests
     public void DecklistAddingService_ImplementsInterface()
     {
         // Act
-        var service = new DecklistAddingService(_database, _mockLogger.Object, _mockHttpClientFactory.Object, _mockConfig, _mockRateLimiter.Object);
+        var service = new DecklistAddingService(_database, _mockHttpClientFactory.Object, _mockConfig, _mockRateLimiter.Object);
 
         // Assert
         Assert.IsAssignableFrom<IDecklistAddingService>(service);
@@ -64,7 +61,7 @@ public class DecklistAddingServiceTests
         // This test verifies that the service correctly generates IDs
         
         // Arrange
-        var service = new DecklistAddingService(_database, _mockLogger.Object, _mockHttpClientFactory.Object, _mockConfig, _mockRateLimiter.Object);
+        var service = new DecklistAddingService(_database, _mockHttpClientFactory.Object, _mockConfig, _mockRateLimiter.Object);
         
         // Manually simulate what AddDecklist would do
         var nextId = _database.Decklists.Any() ? _database.Decklists.Max(d => d.Id) + 1 : 1;
@@ -192,7 +189,7 @@ public class DecklistAddingServiceTests
         // Verify that the service requires rate limiter dependency
         
         // Arrange & Act
-        var service = new DecklistAddingService(_database, _mockLogger.Object, _mockHttpClientFactory.Object, _mockConfig, _mockRateLimiter.Object);
+        var service = new DecklistAddingService(_database, _mockHttpClientFactory.Object, _mockConfig, _mockRateLimiter.Object);
 
         // Assert
         Assert.NotNull(service);

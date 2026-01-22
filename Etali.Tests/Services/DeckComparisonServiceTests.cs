@@ -2,7 +2,6 @@ using Etali_Data_Collection_Web_API;
 using Etali_Data_Collection_Web_API.Models;
 using Etali_Data_Collection_Web_API.Services;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
@@ -12,7 +11,6 @@ public class DeckComparisonServiceTests
 {
     private readonly EtaliDatabase _database;
     private readonly DeckComparisonService _service;
-    private readonly Mock<ILogger<DeckComparisonService>> _loggerMock;
     private readonly Mock<IHandGenerationService> _handGenerationMock;
 
     public DeckComparisonServiceTests()
@@ -21,12 +19,10 @@ public class DeckComparisonServiceTests
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
         _database = new EtaliDatabase(options);
-        _loggerMock = new Mock<ILogger<DeckComparisonService>>();
         _handGenerationMock = new Mock<IHandGenerationService>();
         
         _service = new DeckComparisonService(
             _database,
-            _loggerMock.Object,
             _handGenerationMock.Object);
     }
 
@@ -224,11 +220,10 @@ public class DeckComparisonServiceTests
         await SeedTestDecks();
         var comparison = await _service.AddDeckComparisonAsync(1, 2);
         
-        // Update Deck1N to be higher
-        var dbComparison = await _database.DeckComparisons.FirstAsync();
-        dbComparison.Deck1N = 10;
-        dbComparison.Deck2N = 5;
-        await _database.SaveChangesAsync();
+        // Add comparison hands to make deck 1 have more evaluated hands than deck 2
+        // This will cause the service to select deck 2 (the one with fewer evaluated hands)
+        await AddComparisonHands(comparison.Id, 1, 3, 2); // 3 hands for deck 1
+        await AddComparisonHands(comparison.Id, 2, 1, 1); // 1 hand for deck 2
 
         var generatedHand = new Hand(
             1,
@@ -247,8 +242,9 @@ public class DeckComparisonServiceTests
             "Deck B",
             0.5f);
 
+        // Use It.IsAny for both parameters to ensure the mock always returns a hand
         _handGenerationMock
-            .Setup(x => x.GenerateHand(It.IsAny<int>(), "Deck B"))
+            .Setup(x => x.GenerateHand(It.IsAny<int>(), It.IsAny<string>()))
             .Returns(generatedHand);
 
         // Act
@@ -256,7 +252,7 @@ public class DeckComparisonServiceTests
 
         // Assert
         Assert.NotNull(result);
-        Assert.Equal(2, result.WhichDeck); // Should select deck 2 (lower N)
+        Assert.Equal(2, result.WhichDeck); // Should select deck 2 (fewer comparison hands)
     }
 
     [Fact]
