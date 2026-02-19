@@ -59,8 +59,8 @@ public record ComparisonHand(
     [property: Description("Name of the source decklist")]
     string DecklistName,
     
-    [property: Description("Lowest Gamble odds value for this hand")]
-    float LowestGambleOdds,
+    [property: Description("Lowest Gamble odds value for this hand (0.0 to 1.0)")]
+    double LowestGambleOdds,
     
     [property: Description("Number of hands generated before finding one with unique card")]
     int GenerationAttempts
