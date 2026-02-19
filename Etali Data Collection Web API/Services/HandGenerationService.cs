@@ -104,8 +104,8 @@ public class HandGenerationService(GameConfiguration configuration, EtaliDatabas
     /// exactly 50% of the time, making Gamble succeed 50% of the time.
     /// This ensures that over a large sample, Gamble success rate matches its probability.
     /// </remarks>
-    private static float GenerateLowestGambleOdds()
+    private static double GenerateLowestGambleOdds()
     {
-        return (float)Random.Shared.NextDouble();
+        return Random.Shared.NextDouble();
     }
 }

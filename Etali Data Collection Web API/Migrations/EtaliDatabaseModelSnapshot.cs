@@ -226,14 +226,6 @@ namespace Etali_Data_Collection_Web_API.Migrations
                         .HasColumnType("character varying(500)")
                         .HasColumnName("deck2_name");
 
-                    b.Property<int?>("OverallDeck1N")
-                        .HasColumnType("integer")
-                        .HasColumnName("overall_deck1_n");
-
-                    b.Property<int?>("OverallDeck2N")
-                        .HasColumnType("integer")
-                        .HasColumnName("overall_deck2_n");
-
                     b.HasKey("Id")
                         .HasName("p_k_deck_comparisons");
 
@@ -372,6 +364,202 @@ namespace Etali_Data_Collection_Web_API.Migrations
                             t.HasCheckConstraint("ck_evaluated_hands_min_cards", "minimum_cards_to_cast_etali >= 1 AND minimum_cards_to_cast_etali <= 8");
 
                             t.HasCheckConstraint("ck_evaluated_hands_seat_order", "seat_order >= 1 AND seat_order <= 4");
+                        });
+                });
+
+            modelBuilder.Entity("Etali_Data_Collection_Web_API.Models.FullMulliganSession", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("CreatedByUserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("character varying(450)")
+                        .HasColumnName("created_by_user_id");
+
+                    b.Property<int>("DecklistId")
+                        .HasColumnType("integer")
+                        .HasColumnName("decklist_id");
+
+                    b.Property<string>("DecklistName")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("decklist_name");
+
+                    b.Property<int>("FinalHandSize")
+                        .HasColumnType("integer")
+                        .HasColumnName("final_hand_size");
+
+                    b.Property<bool>("FoundSuccessfulHand")
+                        .HasColumnType("boolean")
+                        .HasColumnName("found_successful_hand");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<float>("LowestGambleOdds")
+                        .HasColumnType("decimal(5,4)")
+                        .HasColumnName("lowest_gamble_odds");
+
+                    b.Property<int>("SeatOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("seat_order");
+
+                    b.Property<string>("Stickers")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("stickers");
+
+                    b.Property<int>("TotalMulligans")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_mulligans");
+
+                    b.Property<int>("TotalSerumPowderActivations")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_serum_powder_activations");
+
+                    b.HasKey("Id")
+                        .HasName("p_k_full_mulligan_sessions");
+
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("ix_full_mulligan_sessions_created_at");
+
+                    b.HasIndex("CreatedByUserId")
+                        .HasDatabaseName("ix_full_mulligan_sessions_created_by_user");
+
+                    b.HasIndex("DecklistId")
+                        .HasDatabaseName("ix_full_mulligan_sessions_decklist_id");
+
+                    b.HasIndex("DecklistId", "IsActive")
+                        .HasDatabaseName("ix_full_mulligan_sessions_decklist_active");
+
+                    b.ToTable("full_mulligan_sessions", t =>
+                        {
+                            t.HasCheckConstraint("ck_full_mulligan_sessions_final_hand_size", "final_hand_size >= 0 AND final_hand_size <= 7");
+
+                            t.HasCheckConstraint("ck_full_mulligan_sessions_seat_order", "seat_order >= 1 AND seat_order <= 4");
+
+                            t.HasCheckConstraint("ck_full_mulligan_sessions_total_mulligans", "total_mulligans >= 0 AND total_mulligans <= 5");
+                        });
+                });
+
+            modelBuilder.Entity("Etali_Data_Collection_Web_API.Models.MulliganHandEvaluation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("CanCastEtaliByTurn2")
+                        .HasColumnType("boolean")
+                        .HasColumnName("can_cast_etali_by_turn2");
+
+                    b.Property<string>("Cards")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<DateTime>("EvaluatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("evaluated_at");
+
+                    b.Property<int>("HandNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("hand_number");
+
+                    b.Property<bool>("KeptHand")
+                        .HasColumnType("boolean")
+                        .HasColumnName("kept_hand");
+
+                    b.Property<int>("SessionId")
+                        .HasColumnType("integer")
+                        .HasColumnName("session_id");
+
+                    b.Property<int>("TargetHandSize")
+                        .HasColumnType("integer")
+                        .HasColumnName("target_hand_size");
+
+                    b.HasKey("Id")
+                        .HasName("p_k_mulligan_hand_evaluations");
+
+                    b.HasIndex("SessionId")
+                        .HasDatabaseName("ix_mulligan_hand_evaluations_session_id");
+
+                    b.HasIndex("SessionId", "HandNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ix_mulligan_hand_evaluations_session_hand_unique");
+
+                    b.ToTable("mulligan_hand_evaluations", t =>
+                        {
+                            t.HasCheckConstraint("ck_mulligan_hand_evaluations_hand_number", "hand_number >= 1 AND hand_number <= 6");
+
+                            t.HasCheckConstraint("ck_mulligan_hand_evaluations_target_hand_size", "target_hand_size IN (3, 4, 5, 6, 7)");
+                        });
+                });
+
+            modelBuilder.Entity("Etali_Data_Collection_Web_API.Models.SerumPowderActivation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("ActivatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("activated_at");
+
+                    b.Property<string>("CardsBottomed")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("CardsExiled")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<int>("HandNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("hand_number");
+
+                    b.Property<int>("SessionId")
+                        .HasColumnType("integer")
+                        .HasColumnName("session_id");
+
+                    b.Property<int>("TargetHandSize")
+                        .HasColumnType("integer")
+                        .HasColumnName("target_hand_size");
+
+                    b.HasKey("Id")
+                        .HasName("p_k_serum_powder_activations");
+
+                    b.HasIndex("SessionId")
+                        .HasDatabaseName("ix_serum_powder_activations_session_id");
+
+                    b.HasIndex("SessionId", "HandNumber")
+                        .HasDatabaseName("ix_serum_powder_activations_session_hand");
+
+                    b.ToTable("serum_powder_activations", t =>
+                        {
+                            t.HasCheckConstraint("ck_serum_powder_activations_hand_number", "hand_number >= 1 AND hand_number <= 6");
+
+                            t.HasCheckConstraint("ck_serum_powder_activations_target_hand_size", "target_hand_size IN (3, 4, 5, 6, 7)");
                         });
                 });
 
@@ -589,6 +777,39 @@ namespace Etali_Data_Collection_Web_API.Migrations
                         .WithMany()
                         .HasForeignKey("DecklistId")
                         .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Etali_Data_Collection_Web_API.Models.FullMulliganSession", b =>
+                {
+                    b.HasOne("Etali_Data_Collection_Web_API.Models.Auth.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Etali_Data_Collection_Web_API.Models.Decklist", null)
+                        .WithMany()
+                        .HasForeignKey("DecklistId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Etali_Data_Collection_Web_API.Models.MulliganHandEvaluation", b =>
+                {
+                    b.HasOne("Etali_Data_Collection_Web_API.Models.FullMulliganSession", null)
+                        .WithMany()
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Etali_Data_Collection_Web_API.Models.SerumPowderActivation", b =>
+                {
+                    b.HasOne("Etali_Data_Collection_Web_API.Models.FullMulliganSession", null)
+                        .WithMany()
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 

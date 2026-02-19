@@ -82,6 +82,7 @@ builder.Services.AddScoped<IDecklistAddingService, DecklistAddingService>();
 builder.Services.AddScoped<IStatisticsService, StatisticsService>();
 builder.Services.AddScoped<IDeckComparisonService, DeckComparisonService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IFullMulliganService, FullMulliganService>();
 
 // Get database configuration
 var dbConfig = builder.Configuration.GetSection("Database").Get<DatabaseConfiguration>() 
@@ -368,6 +369,7 @@ app.MapHandEndpoints();
 app.MapDecklistEndpoints();
 app.MapStatisticsEndpoints();
 app.MapDeckComparisonEndpoints();
+app.MapFullMulliganEndpoints();
 
 app.Run();
 

@@ -12,6 +12,9 @@ public class EtaliDatabase(DbContextOptions<EtaliDatabase> options) : IdentityDb
     public DbSet<Decklist> Decklists { get; set; } = null!;
     public DbSet<DeckComparison> DeckComparisons { get; set; } = null!;
     public DbSet<ComparisonEvaluatedHand> ComparisonEvaluatedHands { get; set; } = null!;
+    public DbSet<FullMulliganSession> FullMulliganSessions { get; set; } = null!;
+    public DbSet<MulliganHandEvaluation> MulliganHandEvaluations { get; set; } = null!;
+    public DbSet<SerumPowderActivation> SerumPowderActivations { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -269,6 +272,153 @@ public class EtaliDatabase(DbContextOptions<EtaliDatabase> options) : IdentityDb
                     "seat_order >= 1 AND seat_order <= 4");
                 t.HasCheckConstraint("ck_comparison_evaluated_hands_gen_attempts", 
                     "generation_attempts >= 1");
+            });
+        });
+
+        // Configure FullMulliganSession
+        modelBuilder.Entity<FullMulliganSession>(entity =>
+        {
+            entity.HasKey(fms => fms.Id);
+
+            entity.Property(fms => fms.DecklistName)
+                .HasMaxLength(500)
+                .IsRequired();
+
+            // Store Stickers as JSONB
+            entity.Property(fms => fms.Stickers)
+                .HasColumnType("jsonb")
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                    v => JsonSerializer.Deserialize<int[]>(v, (JsonSerializerOptions?)null) ?? Array.Empty<int>());
+
+            entity.Property(fms => fms.CreatedByUserId)
+                .HasMaxLength(450)
+                .IsRequired();
+
+            entity.Property(fms => fms.CreatedAt)
+                .HasColumnType("timestamp with time zone");
+
+            entity.Property(fms => fms.CompletedAt)
+                .HasColumnType("timestamp with time zone");
+
+            // Indexes for performance
+            entity.HasIndex(fms => fms.DecklistId)
+                .HasDatabaseName("ix_full_mulligan_sessions_decklist_id");
+
+            entity.HasIndex(fms => fms.CreatedByUserId)
+                .HasDatabaseName("ix_full_mulligan_sessions_created_by_user");
+
+            entity.HasIndex(fms => new { fms.DecklistId, fms.IsActive })
+                .HasDatabaseName("ix_full_mulligan_sessions_decklist_active");
+
+            entity.HasIndex(fms => fms.CreatedAt)
+                .HasDatabaseName("ix_full_mulligan_sessions_created_at");
+
+            // Foreign key to Decklist
+            entity.HasOne<Decklist>()
+                .WithMany()
+                .HasForeignKey(fms => fms.DecklistId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Foreign key to ApplicationUser
+            entity.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(fms => fms.CreatedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Check constraints
+            entity.ToTable(t =>
+            {
+                t.HasCheckConstraint("ck_full_mulligan_sessions_seat_order",
+                    "seat_order >= 1 AND seat_order <= 4");
+                t.HasCheckConstraint("ck_full_mulligan_sessions_final_hand_size",
+                    "final_hand_size >= 0 AND final_hand_size <= 7");
+                t.HasCheckConstraint("ck_full_mulligan_sessions_total_mulligans",
+                    "total_mulligans >= 0 AND total_mulligans <= 5");
+            });
+        });
+
+        // Configure MulliganHandEvaluation
+        modelBuilder.Entity<MulliganHandEvaluation>(entity =>
+        {
+            entity.HasKey(mhe => mhe.Id);
+
+            // Store Cards as JSONB
+            entity.Property(mhe => mhe.Cards)
+                .HasColumnType("jsonb")
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                    v => JsonSerializer.Deserialize<Card[]>(v, (JsonSerializerOptions?)null) ?? Array.Empty<Card>());
+
+            entity.Property(mhe => mhe.EvaluatedAt)
+                .HasColumnType("timestamp with time zone");
+
+            // Indexes for performance
+            entity.HasIndex(mhe => mhe.SessionId)
+                .HasDatabaseName("ix_mulligan_hand_evaluations_session_id");
+
+            entity.HasIndex(mhe => new { mhe.SessionId, mhe.HandNumber })
+                .IsUnique()
+                .HasDatabaseName("ix_mulligan_hand_evaluations_session_hand_unique");
+
+            // Foreign key to FullMulliganSession
+            entity.HasOne<FullMulliganSession>()
+                .WithMany()
+                .HasForeignKey(mhe => mhe.SessionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Check constraints
+            entity.ToTable(t =>
+            {
+                t.HasCheckConstraint("ck_mulligan_hand_evaluations_hand_number",
+                    "hand_number >= 1 AND hand_number <= 6");
+                t.HasCheckConstraint("ck_mulligan_hand_evaluations_target_hand_size",
+                    "target_hand_size IN (3, 4, 5, 6, 7)");
+            });
+        });
+
+        // Configure SerumPowderActivation
+        modelBuilder.Entity<SerumPowderActivation>(entity =>
+        {
+            entity.HasKey(spa => spa.Id);
+
+            // Store CardsExiled as JSONB
+            entity.Property(spa => spa.CardsExiled)
+                .HasColumnType("jsonb")
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                    v => JsonSerializer.Deserialize<Card[]>(v, (JsonSerializerOptions?)null) ?? Array.Empty<Card>());
+
+            // Store CardsBottomed as JSONB
+            entity.Property(spa => spa.CardsBottomed)
+                .HasColumnType("jsonb")
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                    v => JsonSerializer.Deserialize<Card[]>(v, (JsonSerializerOptions?)null) ?? Array.Empty<Card>());
+
+            entity.Property(spa => spa.ActivatedAt)
+                .HasColumnType("timestamp with time zone");
+
+            // Indexes for performance
+            entity.HasIndex(spa => spa.SessionId)
+                .HasDatabaseName("ix_serum_powder_activations_session_id");
+
+            entity.HasIndex(spa => new { spa.SessionId, spa.HandNumber })
+                .HasDatabaseName("ix_serum_powder_activations_session_hand");
+
+            // Foreign key to FullMulliganSession
+            entity.HasOne<FullMulliganSession>()
+                .WithMany()
+                .HasForeignKey(spa => spa.SessionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Check constraints
+            entity.ToTable(t =>
+            {
+                t.HasCheckConstraint("ck_serum_powder_activations_hand_number",
+                    "hand_number >= 1 AND hand_number <= 6");
+                t.HasCheckConstraint("ck_serum_powder_activations_target_hand_size",
+                    "target_hand_size IN (3, 4, 5, 6, 7)");
             });
         });
 
