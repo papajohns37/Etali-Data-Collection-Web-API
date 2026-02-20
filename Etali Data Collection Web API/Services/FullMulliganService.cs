@@ -416,11 +416,13 @@ public class FullMulliganService(
     }
 
     /// <summary>
-    /// Draws 7 cards from the top of the deck.
+    /// Draws a specified number of cards from the top of the deck.
     /// </summary>
-    private static Card[] DrawHand(Card[] deck)
+    /// <param name="deck">The shuffled deck to draw from.</param>
+    /// <param name="count">The number of cards to draw (default is 7).</param>
+    private static Card[] DrawHand(Card[] deck, int count = 7)
     {
-        return deck.Take(7).ToArray();
+        return deck.Take(count).ToArray();
     }
 
     /// <summary>
@@ -628,7 +630,8 @@ public class FullMulliganService(
         var shuffledDeck = ShuffleDeck(availableCards);
         _activeDecks[session.Id] = shuffledDeck;
 
-        var newHandCards = DrawHand(shuffledDeck);
+        // Draw the same number of cards as target hand size (not always 7!)
+        var newHandCards = DrawHand(shuffledDeck, targetHandSize);
 
         // Generate NEW gamble odds for the Serum Powder hand
         var newGambleOdds = GenerateLowestGambleOdds();
