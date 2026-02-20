@@ -12,7 +12,8 @@ namespace Etali_Data_Collection_Web_API.Services;
 public class FullMulliganService(
     EtaliDatabase database,
     GameConfiguration configuration,
-    IHandEvaluationService handEvaluationService) : IFullMulliganService
+    IHandEvaluationService handEvaluationService,
+    ILogger<FullMulliganService> logger) : IFullMulliganService
 {
     // Store shuffled decks in memory during active sessions
     // In production, consider using Redis or another distributed cache
@@ -23,17 +24,55 @@ public class FullMulliganService(
     /// <inheritdoc/>
     public async Task<FullMulliganStartResponse> StartSessionAsync(int decklistId, string userId)
     {
+        logger.LogInformation("Starting mulligan session - DecklistId: {DecklistId}, UserId: {UserId}", decklistId, userId);
+
         // Validate decklist exists
         var decklist = await database.Decklists.FirstOrDefaultAsync(d => d.Id == decklistId);
         if (decklist == null)
         {
+            logger.LogWarning("Decklist not found - DecklistId: {DecklistId}", decklistId);
             throw new InvalidOperationException($"Decklist with ID {decklistId} not found.");
         }
 
         if (decklist.Cards.Length < 7)
         {
+            logger.LogWarning("Insufficient cards in decklist - DecklistId: {DecklistId}, CardCount: {CardCount}", decklistId, decklist.Cards.Length);
             throw new InvalidOperationException(
                 $"Decklist '{decklist.Name}' has insufficient cards. At least 7 cards are required.");
+        }
+
+        // Check for existing active sessions (log but don't modify)
+        var activeSessions = await database.FullMulliganSessions
+            .Where(s => s.DecklistId == decklistId && 
+                        s.CreatedByUserId == userId && 
+                        s.IsActive)
+            .ToListAsync();
+
+        if (activeSessions.Any())
+        {
+            logger.LogWarning(
+                "User has {Count} active session(s) for decklist - DecklistId: {DecklistId}, UserId: {UserId}, SessionIds: {SessionIds}",
+                activeSessions.Count,
+                decklistId,
+                userId,
+                string.Join(", ", activeSessions.Select(s => s.Id)));
+
+            // Check if these sessions exist in memory
+            foreach (var activeSession in activeSessions)
+            {
+                var hasMetadata = _sessionMetadata.ContainsKey(activeSession.Id);
+                var hasDeck = _activeDecks.ContainsKey(activeSession.Id);
+                var hasExiled = _exiledCards.ContainsKey(activeSession.Id);
+
+                logger.LogWarning(
+                    "Active session state - SessionId: {SessionId}, InMemoryMetadata: {HasMetadata}, InMemoryDeck: {HasDeck}, InMemoryExiled: {HasExiled}, CreatedAt: {CreatedAt}, TotalMulligans: {TotalMulligans}",
+                    activeSession.Id,
+                    hasMetadata,
+                    hasDeck,
+                    hasExiled,
+                    activeSession.CreatedAt,
+                    activeSession.TotalMulligans);
+            }
         }
 
         // Generate game metadata (stays consistent throughout the session)
@@ -128,18 +167,41 @@ public class FullMulliganService(
         // Get session metadata
         if (!_sessionMetadata.TryGetValue(session.Id, out var metadata))
         {
+            logger.LogError(
+                "Session metadata not found in memory - SessionId: {SessionId}, DecklistId: {DecklistId}, UserId: {UserId}, IsActive: {IsActive}, CreatedAt: {CreatedAt}, HandNumber: {HandNumber}",
+                session.Id,
+                session.DecklistId,
+                userId,
+                session.IsActive,
+                session.CreatedAt,
+                request.HandNumber);
+
             throw new InvalidOperationException("Session metadata not found. Session may have expired.");
         }
 
         // Get current deck state
         if (!_activeDecks.TryGetValue(session.Id, out var currentDeck))
         {
+            logger.LogError(
+                "Session deck not found in memory - SessionId: {SessionId}, DecklistId: {DecklistId}, UserId: {UserId}, HasMetadata: true, HandNumber: {HandNumber}",
+                session.Id,
+                session.DecklistId,
+                userId,
+                request.HandNumber);
+
             throw new InvalidOperationException("Session deck not found. Session may have expired.");
         }
 
         // Get exiled cards for this session
         if (!_exiledCards.TryGetValue(session.Id, out var exiledCards))
         {
+            logger.LogError(
+                "Session exiled cards not found in memory - SessionId: {SessionId}, DecklistId: {DecklistId}, UserId: {UserId}, HasMetadata: true, HasDeck: true, HandNumber: {HandNumber}",
+                session.Id,
+                session.DecklistId,
+                userId,
+                request.HandNumber);
+
             throw new InvalidOperationException("Session exiled cards not found. Session may have expired.");
         }
 
@@ -183,12 +245,32 @@ public class FullMulliganService(
             session.IsActive = false;
             session.CompletedAt = DateTime.UtcNow;
 
+            logger.LogInformation(
+                "Completing mulligan session - SessionId: {SessionId}, DecklistId: {DecklistId}, UserId: {UserId}, Success: {Success}, FinalHandSize: {FinalHandSize}, TotalMulligans: {TotalMulligans}, TotalSerumPowderActivations: {SerumPowder}",
+                session.Id,
+                session.DecklistId,
+                userId,
+                session.FoundSuccessfulHand,
+                session.FinalHandSize,
+                session.TotalMulligans,
+                session.TotalSerumPowderActivations);
+
             await database.SaveChangesAsync();
+
+            logger.LogInformation(
+                "Session saved to database - SessionId: {SessionId}, IsActive: {IsActive}, CompletedAt: {CompletedAt}",
+                session.Id,
+                session.IsActive,
+                session.CompletedAt);
 
             // Clean up memory
             _activeDecks.TryRemove(session.Id, out _);
             _sessionMetadata.TryRemove(session.Id, out _);
             _exiledCards.TryRemove(session.Id, out _);
+
+            logger.LogInformation(
+                "Session memory cleaned up - SessionId: {SessionId}",
+                session.Id);
 
             var summary = new FullMulliganSessionSummary(
                 SessionId: session.Id,
