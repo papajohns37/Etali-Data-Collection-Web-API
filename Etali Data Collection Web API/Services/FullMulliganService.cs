@@ -562,10 +562,10 @@ public class FullMulliganService(
         List<Card> exiledCards,
         int targetHandSize)
     {
-        // Validate CardsToBottomIndices is provided
-        if (request.CardsToBottomIndices == null || request.CardsToBottomIndices.Length == 0)
+        // Validate CardsToBottomIndices is provided (null is invalid, empty array is valid for 7-card hands)
+        if (request.CardsToBottomIndices == null)
         {
-            throw new InvalidOperationException("CardsToBottomIndices must be provided when activating Serum Powder.");
+            throw new InvalidOperationException("CardsToBottomIndices must be provided when activating Serum Powder (use empty array for 7-card hands).");
         }
 
         // Calculate expected number of cards to bottom
