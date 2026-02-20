@@ -412,10 +412,6 @@ namespace Etali_Data_Collection_Web_API.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("is_active");
 
-                    b.Property<float>("LowestGambleOdds")
-                        .HasColumnType("decimal(5,4)")
-                        .HasColumnName("lowest_gamble_odds");
-
                     b.Property<int>("SeatOrder")
                         .HasColumnType("integer")
                         .HasColumnName("seat_order");
