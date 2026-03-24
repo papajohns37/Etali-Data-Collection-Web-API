@@ -41,14 +41,6 @@ echo "? Admin email set to: $ADMIN_EMAIL"
 echo ""
 
 # Get admin password
-echo "Password Requirements:"
-echo "  - Minimum 6 characters"
-echo "  - At least one uppercase letter (A-Z)"
-echo "  - At least one lowercase letter (a-z)"
-echo "  - At least one digit (0-9)"
-echo "  - At least one special character (!@#\$%^&*, etc.)"
-echo ""
-
 while true; do
     read -s -p "Admin Password: " ADMIN_PASSWORD
     echo ""
@@ -57,37 +49,6 @@ while true; do
     
     if [ "$ADMIN_PASSWORD" != "$ADMIN_PASSWORD_CONFIRM" ]; then
         echo "Passwords do not match. Please try again."
-        echo ""
-        continue
-    fi
-    
-    # Validate password requirements
-    if [ ${#ADMIN_PASSWORD} -lt 6 ]; then
-        echo "Password must be at least 6 characters long."
-        echo ""
-        continue
-    fi
-    
-    if ! [[ "$ADMIN_PASSWORD" =~ [A-Z] ]]; then
-        echo "Password must contain at least one uppercase letter."
-        echo ""
-        continue
-    fi
-    
-    if ! [[ "$ADMIN_PASSWORD" =~ [a-z] ]]; then
-        echo "Password must contain at least one lowercase letter."
-        echo ""
-        continue
-    fi
-    
-    if ! [[ "$ADMIN_PASSWORD" =~ [0-9] ]]; then
-        echo "Password must contain at least one digit."
-        echo ""
-        continue
-    fi
-    
-    if ! [[ "$ADMIN_PASSWORD" =~ [^a-zA-Z0-9] ]]; then
-        echo "Password must contain at least one special character."
         echo ""
         continue
     fi

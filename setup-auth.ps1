@@ -37,14 +37,6 @@ Write-Host "? Admin email set to: $adminEmail" -ForegroundColor Green
 Write-Host ""
 
 # Get admin password
-Write-Host "Password Requirements:" -ForegroundColor Cyan
-Write-Host "  - Minimum 6 characters" -ForegroundColor Gray
-Write-Host "  - At least one uppercase letter (A-Z)" -ForegroundColor Gray
-Write-Host "  - At least one lowercase letter (a-z)" -ForegroundColor Gray
-Write-Host "  - At least one digit (0-9)" -ForegroundColor Gray
-Write-Host "  - At least one special character (!@#$%^&*, etc.)" -ForegroundColor Gray
-Write-Host ""
-
 $passwordValid = $false
 do {
     $adminPassword = Read-Host "Admin Password" -AsSecureString
@@ -58,35 +50,6 @@ do {
     
     if ($passwordText -ne $passwordConfirmText) {
         Write-Host "Passwords do not match. Please try again." -ForegroundColor Red
-        Write-Host ""
-        continue
-    }
-    
-    # Validate password requirements
-    $hasUpper = $passwordText -cmatch "[A-Z]"
-    $hasLower = $passwordText -cmatch "[a-z]"
-    $hasDigit = $passwordText -match "\d"
-    $hasSpecial = $passwordText -match "[^a-zA-Z0-9]"
-    $hasLength = $passwordText.Length -ge 6
-    
-    if (!$hasLength) {
-        Write-Host "Password must be at least 6 characters long." -ForegroundColor Red
-        Write-Host ""
-    }
-    elseif (!$hasUpper) {
-        Write-Host "Password must contain at least one uppercase letter." -ForegroundColor Red
-        Write-Host ""
-    }
-    elseif (!$hasLower) {
-        Write-Host "Password must contain at least one lowercase letter." -ForegroundColor Red
-        Write-Host ""
-    }
-    elseif (!$hasDigit) {
-        Write-Host "Password must contain at least one digit." -ForegroundColor Red
-        Write-Host ""
-    }
-    elseif (!$hasSpecial) {
-        Write-Host "Password must contain at least one special character." -ForegroundColor Red
         Write-Host ""
     }
     else {
