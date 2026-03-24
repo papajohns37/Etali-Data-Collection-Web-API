@@ -300,15 +300,16 @@ public class AuthEndpointsTests : IClassFixture<CustomWebApplicationFactory>
     }
 
     [Fact]
-    public async Task Register_WithAdminRole_WeakPassword_ReturnsBadRequest()
+    public async Task Register_WithAdminRole_SimplePassword_ReturnsOk()
     {
         // Arrange - Login as admin
         var adminClient = await _factory.CreateAuthenticatedClientAsync(useAdmin: true);
         
+        var uniqueUsername = $"newuser{Guid.NewGuid():N}";
         var registerRequest = new
         {
-            username = "newuser",
-            password = "weak", // Too short, missing requirements
+            username = uniqueUsername,
+            password = "weak", // Previously rejected, now accepted without password requirements
             confirmPassword = "weak",
             isAdmin = false
         };
@@ -317,7 +318,7 @@ public class AuthEndpointsTests : IClassFixture<CustomWebApplicationFactory>
         var response = await adminClient.PostAsJsonAsync("/auth/register", registerRequest);
 
         // Assert
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     [Fact]
