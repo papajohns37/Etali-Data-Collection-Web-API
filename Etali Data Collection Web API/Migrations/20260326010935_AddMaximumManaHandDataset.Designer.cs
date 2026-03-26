@@ -302,6 +302,10 @@ namespace Etali_Data_Collection_Web_API.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("id");
 
+                    b.Property<bool>("CanCastEtali")
+                        .HasColumnType("boolean")
+                        .HasColumnName("can_cast_etali");
+
                     b.Property<string>("Cards")
                         .IsRequired()
                         .HasColumnType("jsonb");
@@ -324,6 +328,10 @@ namespace Etali_Data_Collection_Web_API.Migrations
                     b.Property<float>("LowestGambleOdds")
                         .HasColumnType("decimal(5,4)")
                         .HasColumnName("lowest_gamble_odds");
+
+                    b.Property<int>("MinimumCardsToCastEtali")
+                        .HasColumnType("integer")
+                        .HasColumnName("minimum_cards_to_cast_etali");
 
                     b.Property<int>("SeatOrder")
                         .HasColumnType("integer")

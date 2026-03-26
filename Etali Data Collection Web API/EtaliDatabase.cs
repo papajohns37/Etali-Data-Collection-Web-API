@@ -107,6 +107,7 @@ public class EtaliDatabase(DbContextOptions<EtaliDatabase> options) : IdentityDb
                 t.HasCheckConstraint("ck_evaluated_hands_seat_order", 
                     "seat_order >= 1 AND seat_order <= 4");
             });
+        });
 
         // Configure MaximumManaEvaluatedHand
         modelBuilder.Entity<MaximumManaEvaluatedHand>(entity =>
@@ -167,7 +168,6 @@ public class EtaliDatabase(DbContextOptions<EtaliDatabase> options) : IdentityDb
                 t.HasCheckConstraint("ck_maximum_mana_evaluated_hands_max_mana_3",
                     "maximum_mana_in3_card_hand >= 0");
             });
-        });
         });
 
         // Configure Decklist
