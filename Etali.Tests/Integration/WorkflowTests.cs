@@ -45,7 +45,7 @@ public class WorkflowTests : IClassFixture<CustomWebApplicationFactory>
             5,
             hand.DecklistId,
             hand.DecklistName,
-            hand.LowestGambleOdds,
+            (float)hand.LowestGambleOdds,
             null
         );
         var evalResponse = await authenticatedClient.PostAsJsonAsync("/hand/evaluate", evaluation);
@@ -113,7 +113,7 @@ public class WorkflowTests : IClassFixture<CustomWebApplicationFactory>
             5,
             hand.DecklistId,
             hand.DecklistName,
-            hand.LowestGambleOdds,
+            (float)hand.LowestGambleOdds,
             null
         );
         var evalResponse = await authenticatedClient.PostAsJsonAsync("/hand/evaluate", evaluation);

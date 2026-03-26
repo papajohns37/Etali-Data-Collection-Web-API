@@ -78,6 +78,8 @@ builder.Services.AddSingleton<IRateLimiter>(new RateLimiter(TimeSpan.FromSeconds
 
 builder.Services.AddScoped<IHandEvaluationService, HandEvaluationService>();
 builder.Services.AddScoped<IHandGenerationService, HandGenerationService>();
+builder.Services.AddScoped<IMaximumManaHandEvaluationService, MaximumManaHandEvaluationService>();
+builder.Services.AddScoped<IMaximumManaHandGenerationService, MaximumManaHandGenerationService>();
 builder.Services.AddScoped<IDecklistAddingService, DecklistAddingService>();
 builder.Services.AddScoped<IStatisticsService, StatisticsService>();
 builder.Services.AddScoped<IDeckComparisonService, DeckComparisonService>();
@@ -366,6 +368,7 @@ app.MapHealthChecks("/health");
 // Map API endpoints
 app.MapAuthEndpoints();
 app.MapHandEndpoints();
+app.MapMaximumManaHandEndpoints();
 app.MapDecklistEndpoints();
 app.MapStatisticsEndpoints();
 app.MapDeckComparisonEndpoints();

@@ -362,14 +362,14 @@ public class HandGenerationServiceTests
         var hand = _service.GenerateHand(1, "TestDeck");
 
         // Assert - LowestGambleOdds should be between 0 and 1 inclusive
-        Assert.InRange(hand.LowestGambleOdds, 0.0f, 1.0f);
+        Assert.InRange(hand.LowestGambleOdds, 0.0, 1.0);
     }
 
     [Fact]
     public void GenerateHand_MultipleHands_ProducesVariedGambleOdds()
     {
         // Act - Generate multiple hands
-        var gambleOdds = new List<float>();
+        var gambleOdds = new List<double>();
         for (int i = 0; i < 50; i++)
         {
             var hand = _service.GenerateHand(i + 400, "TestDeck");
@@ -379,7 +379,7 @@ public class HandGenerationServiceTests
         // Assert - Should have variety in gamble odds (not all the same)
         var distinctOdds = gambleOdds.Distinct().Count();
         Assert.True(distinctOdds > 10, "Gamble odds should vary significantly across multiple hands");
-        Assert.All(gambleOdds, odds => Assert.InRange(odds, 0.0f, 1.0f));
+        Assert.All(gambleOdds, odds => Assert.InRange(odds, 0.0, 1.0));
     }
 
     [Fact]
@@ -498,7 +498,7 @@ public class HandGenerationServiceTests
         // Verify that the distribution is truly uniform by checking multiple ranges
         
         const int sampleSize = 10000;
-        var values = new List<float>();
+        var values = new List<double>();
         
         for (int i = 0; i < sampleSize; i++)
         {
@@ -507,10 +507,10 @@ public class HandGenerationServiceTests
         }
 
         // Check that values are distributed across the entire [0, 1] range
-        var below025 = values.Count(v => v < 0.25f);
-        var between025and050 = values.Count(v => v >= 0.25f && v < 0.50f);
-        var between050and075 = values.Count(v => v >= 0.50f && v < 0.75f);
-        var above075 = values.Count(v => v >= 0.75f);
+        var below025 = values.Count(v => v < 0.25);
+        var between025and050 = values.Count(v => v >= 0.25 && v < 0.50);
+        var between050and075 = values.Count(v => v >= 0.50 && v < 0.75);
+        var above075 = values.Count(v => v >= 0.75);
 
         // Each quartile should have approximately 25% of values (within 3%)
         Assert.InRange(below025, 2200, 2800); // 25% of 10000 = 2500 ± 300

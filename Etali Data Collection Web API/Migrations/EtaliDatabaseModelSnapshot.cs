@@ -112,10 +112,6 @@ namespace Etali_Data_Collection_Web_API.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    b.Property<bool>("CanCastEtali")
-                        .HasColumnType("boolean")
-                        .HasColumnName("can_cast_etali");
-
                     b.Property<string>("Cards")
                         .IsRequired()
                         .HasColumnType("jsonb");
@@ -146,10 +142,6 @@ namespace Etali_Data_Collection_Web_API.Migrations
                     b.Property<float>("LowestGambleOdds")
                         .HasColumnType("decimal(5,4)")
                         .HasColumnName("lowest_gamble_odds");
-
-                    b.Property<int>("MinimumCardsToCastEtali")
-                        .HasColumnType("integer")
-                        .HasColumnName("minimum_cards_to_cast_etali");
 
                     b.Property<int>("SeatOrder")
                         .HasColumnType("integer")
@@ -307,10 +299,6 @@ namespace Etali_Data_Collection_Web_API.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("id");
 
-                    b.Property<bool>("CanCastEtali")
-                        .HasColumnType("boolean")
-                        .HasColumnName("can_cast_etali");
-
                     b.Property<string>("Cards")
                         .IsRequired()
                         .HasColumnType("jsonb");
@@ -333,10 +321,6 @@ namespace Etali_Data_Collection_Web_API.Migrations
                     b.Property<float>("LowestGambleOdds")
                         .HasColumnType("decimal(5,4)")
                         .HasColumnName("lowest_gamble_odds");
-
-                    b.Property<int>("MinimumCardsToCastEtali")
-                        .HasColumnType("integer")
-                        .HasColumnName("minimum_cards_to_cast_etali");
 
                     b.Property<int>("SeatOrder")
                         .HasColumnType("integer")
@@ -451,6 +435,89 @@ namespace Etali_Data_Collection_Web_API.Migrations
                             t.HasCheckConstraint("ck_full_mulligan_sessions_seat_order", "seat_order >= 1 AND seat_order <= 4");
 
                             t.HasCheckConstraint("ck_full_mulligan_sessions_total_mulligans", "total_mulligans >= 0 AND total_mulligans <= 5");
+                        });
+                });
+
+            modelBuilder.Entity("Etali_Data_Collection_Web_API.Models.MaximumManaEvaluatedHand", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Cards")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("CreatedByUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("character varying(450)")
+                        .HasColumnName("created_by_user_id");
+
+                    b.Property<int>("DecklistId")
+                        .HasColumnType("integer")
+                        .HasColumnName("decklist_id");
+
+                    b.Property<string>("DecklistName")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("decklist_name");
+
+                    b.Property<float>("LowestGambleOdds")
+                        .HasColumnType("decimal(5,4)")
+                        .HasColumnName("lowest_gamble_odds");
+
+                    b.Property<int>("MaximumManaIn3CardHand")
+                        .HasColumnType("integer")
+                        .HasColumnName("maximum_mana_in3_card_hand");
+
+                    b.Property<int>("MaximumManaIn4CardHand")
+                        .HasColumnType("integer")
+                        .HasColumnName("maximum_mana_in4_card_hand");
+
+                    b.Property<int>("MaximumManaIn5CardHand")
+                        .HasColumnType("integer")
+                        .HasColumnName("maximum_mana_in5_card_hand");
+
+                    b.Property<int>("MaximumManaIn6CardHand")
+                        .HasColumnType("integer")
+                        .HasColumnName("maximum_mana_in6_card_hand");
+
+                    b.Property<int>("MaximumManaIn7CardHand")
+                        .HasColumnType("integer")
+                        .HasColumnName("maximum_mana_in7_card_hand");
+
+                    b.Property<int>("SeatOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("seat_order");
+
+                    b.Property<string>("Stickers")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("stickers");
+
+                    b.HasKey("Id")
+                        .HasName("p_k_maximum_mana_evaluated_hands");
+
+                    b.HasIndex("CreatedByUserId")
+                        .HasDatabaseName("ix_maximum_mana_evaluated_hands_created_by_user");
+
+                    b.HasIndex("DecklistId")
+                        .HasDatabaseName("ix_maximum_mana_evaluated_hands_decklist_id");
+
+                    b.ToTable("maximum_mana_evaluated_hands", t =>
+                        {
+                            t.HasCheckConstraint("ck_maximum_mana_evaluated_hands_max_mana_3", "maximum_mana_in3_card_hand >= 0");
+
+                            t.HasCheckConstraint("ck_maximum_mana_evaluated_hands_max_mana_4", "maximum_mana_in4_card_hand >= 0");
+
+                            t.HasCheckConstraint("ck_maximum_mana_evaluated_hands_max_mana_5", "maximum_mana_in5_card_hand >= 0");
+
+                            t.HasCheckConstraint("ck_maximum_mana_evaluated_hands_max_mana_6", "maximum_mana_in6_card_hand >= 0");
+
+                            t.HasCheckConstraint("ck_maximum_mana_evaluated_hands_max_mana_7", "maximum_mana_in7_card_hand >= 0");
+
+                            t.HasCheckConstraint("ck_maximum_mana_evaluated_hands_seat_order", "seat_order >= 1 AND seat_order <= 4");
                         });
                 });
 
@@ -783,6 +850,20 @@ namespace Etali_Data_Collection_Web_API.Migrations
                         .HasForeignKey("CreatedByUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("Etali_Data_Collection_Web_API.Models.Decklist", null)
+                        .WithMany()
+                        .HasForeignKey("DecklistId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Etali_Data_Collection_Web_API.Models.MaximumManaEvaluatedHand", b =>
+                {
+                    b.HasOne("Etali_Data_Collection_Web_API.Models.Auth.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("Etali_Data_Collection_Web_API.Models.Decklist", null)
                         .WithMany()

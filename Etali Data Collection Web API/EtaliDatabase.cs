@@ -9,6 +9,7 @@ using System.Text.Json;
 public class EtaliDatabase(DbContextOptions<EtaliDatabase> options) : IdentityDbContext<ApplicationUser>(options)
 {
     public DbSet<EvaluatedHand> EvaluatedHands { get; set; } = null!;
+    public DbSet<MaximumManaEvaluatedHand> MaximumManaEvaluatedHands { get; set; } = null!;
     public DbSet<Decklist> Decklists { get; set; } = null!;
     public DbSet<DeckComparison> DeckComparisons { get; set; } = null!;
     public DbSet<ComparisonEvaluatedHand> ComparisonEvaluatedHands { get; set; } = null!;
@@ -106,6 +107,67 @@ public class EtaliDatabase(DbContextOptions<EtaliDatabase> options) : IdentityDb
                 t.HasCheckConstraint("ck_evaluated_hands_seat_order", 
                     "seat_order >= 1 AND seat_order <= 4");
             });
+
+        // Configure MaximumManaEvaluatedHand
+        modelBuilder.Entity<MaximumManaEvaluatedHand>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedNever();
+
+            entity.Property(e => e.Cards)
+                .HasColumnType("jsonb")
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                    v => JsonSerializer.Deserialize<Card[]>(v, (JsonSerializerOptions?)null) ?? Array.Empty<Card>());
+
+            entity.Property(e => e.Stickers)
+                .HasColumnType("jsonb")
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                    v => JsonSerializer.Deserialize<int[]>(v, (JsonSerializerOptions?)null) ?? Array.Empty<int>());
+
+            entity.Property(e => e.DecklistName)
+                .HasMaxLength(500)
+                .IsRequired();
+
+            entity.Property(e => e.CreatedByUserId)
+                .HasMaxLength(450);
+
+            entity.Property(e => e.LowestGambleOdds)
+                .HasColumnType("decimal(5,4)");
+
+            entity.HasIndex(e => e.DecklistId)
+                .HasDatabaseName("ix_maximum_mana_evaluated_hands_decklist_id");
+
+            entity.HasIndex(e => e.CreatedByUserId)
+                .HasDatabaseName("ix_maximum_mana_evaluated_hands_created_by_user");
+
+            entity.HasOne<Decklist>()
+                .WithMany()
+                .HasForeignKey(e => e.DecklistId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(e => e.CreatedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.ToTable(t =>
+            {
+                t.HasCheckConstraint("ck_maximum_mana_evaluated_hands_seat_order",
+                    "seat_order >= 1 AND seat_order <= 4");
+                t.HasCheckConstraint("ck_maximum_mana_evaluated_hands_max_mana_7",
+                    "maximum_mana_in7_card_hand >= 0");
+                t.HasCheckConstraint("ck_maximum_mana_evaluated_hands_max_mana_6",
+                    "maximum_mana_in6_card_hand >= 0");
+                t.HasCheckConstraint("ck_maximum_mana_evaluated_hands_max_mana_5",
+                    "maximum_mana_in5_card_hand >= 0");
+                t.HasCheckConstraint("ck_maximum_mana_evaluated_hands_max_mana_4",
+                    "maximum_mana_in4_card_hand >= 0");
+                t.HasCheckConstraint("ck_maximum_mana_evaluated_hands_max_mana_3",
+                    "maximum_mana_in3_card_hand >= 0");
+            });
+        });
         });
 
         // Configure Decklist
